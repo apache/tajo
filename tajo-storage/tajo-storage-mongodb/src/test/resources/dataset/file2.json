@@ -1,4 +1,7 @@
-{
-  'name' : 'mkyong',
-  'age' : 30
-}
+[
+  { "title" : "Hand of the King", "first_name": "Eddard", "last_name": "Stark"},
+  { "title" : "Assassin",  "first_name": "Arya", "last_name": "Stark"},
+  { "title" : "Lady",  "first_name": "Sansa", "last_name": "Stark"},
+  { "title" : "Dancing Master",  "first_name": "Syrio", "last_name": "Forel"},
+  { "title" : "Dancing Master's Father", "first_name": "Nyrio", "last_name": "Forel"}
+]

@@ -1,1 +1,1 @@
-select lol from col1;
+select title from got;

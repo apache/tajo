@@ -191,7 +191,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
   public final void testInsertIntoPartitionedTable() throws Exception {
     String tableName = IdentifierUtil.normalizeIdentifier("testInsertIntoPartitionedTable");
     executeString("create table " + tableName + " (n_name TEXT, n_regionkey INT4)" +
-        "USING csv PARTITION by column(n_nationkey INT4)" ).close();
+        "USING text PARTITION by column(n_nationkey INT4)" ).close();
 
     try {
       executeString("insert into " + tableName + " select n_name, n_regionkey, n_nationkey from default.nation").close();
@@ -754,7 +754,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
   public final void testInsertOverwritePathWithNonFromQuery() throws Exception {
     ResultSet res = executeString("insert overwrite into location " +
         "'/tajo-data/testInsertOverwritePathWithNonFromQuery' " +
-        "USING csv WITH ('text.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
+        "USING text WITH ('text.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
         "select 1::INT4, 2.1::FLOAT4, 'test'");
 
     res.close();

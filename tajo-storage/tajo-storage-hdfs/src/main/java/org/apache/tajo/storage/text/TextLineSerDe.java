@@ -43,13 +43,7 @@ public abstract class TextLineSerDe {
   public abstract TextLineSerializer createSerializer(Schema schema, TableMeta meta);
 
   public static ByteBuf getNullChars(TableMeta meta) {
-    byte[] nullCharByteArray;
-    if (meta.getDataFormat().equals(BuiltinStorages.SEQUENCE_FILE)) {
-      nullCharByteArray = getNullCharsAsBytes(meta, StorageConstants.SEQUENCEFILE_NULL, "\\");
-    } else {
-      nullCharByteArray = getNullCharsAsBytes(meta);
-    }
-
+    byte[] nullCharByteArray = getNullCharsAsBytes(meta);
     ByteBuf nullChars = BufferPool.directBuffer(nullCharByteArray.length, nullCharByteArray.length);
     nullChars.writeBytes(nullCharByteArray);
 

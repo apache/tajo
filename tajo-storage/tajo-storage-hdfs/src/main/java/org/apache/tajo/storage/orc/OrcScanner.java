@@ -300,8 +300,8 @@ public class OrcScanner extends FileScanner {
   public void close() throws IOException {
     if (recordReader != null) {
       recordReader.close();
-      tableStats.setNumBytes(recordReader.getNumBytes());
-      tableStats.setNumRows(recordCount);
+      inputStats.setNumBytes(recordReader.getNumBytes());
+      inputStats.setNumRows(recordCount);
     }
   }
 

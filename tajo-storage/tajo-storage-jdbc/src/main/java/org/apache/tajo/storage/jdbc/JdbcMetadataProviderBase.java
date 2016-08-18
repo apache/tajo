@@ -224,11 +224,12 @@ public abstract class JdbcMetadataProviderBase implements MetadataProvider {
       final TableStats stats = new TableStats();
       stats.setNumRows(-1); // unknown
 
+      TableMeta meta = new TableMeta("rowstore", new KeyValueSet());
       final TableDesc table = new TableDesc(
           IdentifierUtil.buildFQName(databaseName, name),
           schema,
-          new TableMeta("rowstore", new KeyValueSet()),
-          space.getTableUri(databaseName, name)
+          meta,
+          space.getTableUri(meta, databaseName, name)
       );
       table.setStats(stats);
 

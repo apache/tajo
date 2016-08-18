@@ -24,6 +24,7 @@ import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.exception.SQLSyntaxError;
 import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.KeyValueSet;
@@ -95,6 +96,11 @@ public class TestCreateTable extends QueryTestCaseBase {
     executeString("DROP DATABASE D2").close();
     assertDatabaseNotExists("d1");
     assertDatabaseNotExists("d2");
+  }
+
+  @Test(expected = SQLSyntaxError.class)
+  public final void testCreateTableWithCsv() throws Exception {
+    executeString("CREATE TABLE D1.table1 (age int) using csv;").close();
   }
 
   private final void assertPathOfCreatedTable(final String databaseName,

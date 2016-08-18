@@ -4,6 +4,13 @@ Release 0.12.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-2165: Add 'ALTER TABLE UNSET PROPERTY' statement to Tajo DDL.
+    (Lee Dongjin via jihoon)
+
+    TAJO-2160: Implement string_agg function. (Byunghwa Yun via jinho)
+
+    TAJO-2148: Implement an example HTTP tablespace. (jihoon)
+
     TAJO-1686: Allow Tajo to use Hive UDF. (Jongyoung Park via jihoon)
 
     TAJO-2122: PullServer as an Auxiliary service of Yarn. (jihoon)
@@ -13,6 +20,8 @@ Release 0.12.0 - unreleased
     TAJO-1955: Add a feature to strip quotes from CSV file. (hyunsik)
 
   IMPROVEMENT
+
+    TAJO-2175: Fix some glitches in source code. (Lee Dongjin via jihoon)
 
     TAJO-2146: Fragment interface cleanup. (jihoon)
 
@@ -151,6 +160,18 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-2177: In BroadcastJoinRule, the total volume of broadcast tables should be 
+    checked before stages are merged. (jihoon)
+
+    TAJO-2168: NullPointerException occurs when a simple query contains a python udf. 
+    (jihoon)
+
+    TAJO-2164: SequenceFile print wrong values with TextSerializerDeserializer.
+    (jaehwa)
+
+    TAJO-2163: No error message is showed when query execution failed. 
+    (Wonjun Hong via jihoon)
+
     TAJO-2150: Fix invalid implementation of date time in jdbc. (jinho)
 
     TAJO-2151: Fix broken CI. (jihoon)
@@ -277,6 +298,10 @@ Release 0.12.0 - unreleased
 
   TASKS
 
+    TAJO-2166: Disallow csv file format in DDL Languages. (Lee Dongjin via jihoon)
+
+    TAJO-2176: Refining function documents. (Jongyoung)
+
     TAJO-2154: Refactor Datum to use new Type implementation. (hyunsik)
 
     TAJO-2027: Writing Hive UDF integration document. (Jongyoung via hyunsik)
@@ -380,6 +405,8 @@ Release 0.12.0 - unreleased
     Committed by jihoon)
 
   SUB TASKS
+
+    TAJO-2156: Create GeoIP functions taking various types instead of INET4 type. (Jongyoung)
 
     TAJO-2130: Remove inet4 data type.
     (Contributed by Jongyoung Park. Committed by jihoon)

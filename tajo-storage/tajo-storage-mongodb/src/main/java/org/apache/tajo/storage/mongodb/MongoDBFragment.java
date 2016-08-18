@@ -17,40 +17,27 @@
  */
 package org.apache.tajo.storage.mongodb;
 
+import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.storage.fragment.AbstractFileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 
 import java.net.URI;
 import java.util.List;
 
+/*
+ Fragment is similar to splits in Map Reduce.
+ Which contains enough details to access, a relevant section from the storage.
+ This will be serialized and passed to the cluster.
+ */
 
 public class MongoDBFragment extends Fragment<Long> {
 
-    protected MongoDBFragment(String kind, URI uri, String inputSourceId, Long startKey, Long endKey, long length, String[] hostNames) {
-        super(kind, uri, inputSourceId, startKey, endKey, length, hostNames);
+
+    protected MongoDBFragment(URI uri,
+                              String inputSourceId,
+                              long startKey,
+                              long endKey) {
+        super("MONGODB", uri, inputSourceId, startKey, endKey, endKey-startKey, null);
     }
-
-
-    public MongoDBFragment(String inputSourceId, URI uri, List<String> hostNames) {
-
-
-        super("MONGODB", uri, inputSourceId, null, null, 0, toArray(hostNames));
-    }
-
-    public static String[] toArray(List<String> list)
-    {
-        String[] hosts = new String[1];
-        hosts[0] = list.get(0);
-        return hosts;
-    }
-
-    public MongoDBFragment(String inputSourceId, URI uri, String[] hostNames) {
-        super("MONGODB", uri, inputSourceId, null, null, 0, hostNames);
-    }
-
-    @Override
-    public boolean isEmpty() {
-        return true;
-    }
-
 }

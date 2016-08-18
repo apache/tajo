@@ -20,33 +20,37 @@ package org.apache.tajo.storage.mongodb;
 
 import com.google.common.collect.Lists;
 import com.mongodb.MongoClient;
+import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import net.minidev.json.JSONObject;
-import org.apache.avro.generic.GenericData;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.OverridableConf;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.exception.*;
+import org.apache.tajo.exception.NotImplementedException;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.LogicalNode;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.schema.IdentifierUtil;
-import org.apache.tajo.storage.FormatProperty;
-import org.apache.tajo.storage.StorageProperty;
-import org.apache.tajo.storage.Tablespace;
-import org.apache.tajo.storage.TupleRange;
+import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.Fragment;
+import org.bson.Document;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+/*
+* TableSpace for MongoDB
+* */
 
 public class MongoDBTableSpace extends Tablespace {
 
@@ -56,12 +60,12 @@ public class MongoDBTableSpace extends Tablespace {
     //Table Space Properties
     static final StorageProperty STORAGE_PROPERTY = new StorageProperty("rowstore", // type is to be defined
             false,  //not movable
-            true, //  writable at the moment
+            true,   //writable at the moment
             true,   // Absolute path
             true); // Meta data will  be provided
     static final FormatProperty FORMAT_PROPERTY = new FormatProperty(
             true, // Insert
-            false, //direct insert
+            true, //direct insert
             true);// result staging
 
     //Mongo Client object
@@ -76,6 +80,7 @@ public class MongoDBTableSpace extends Tablespace {
     public static final String CONFIG_KEY_CONN_PROPERTIES = "connection_properties";
     public static final String CONFIG_KEY_USERNAME = "user";
     public static final String CONFIG_KEY_PASSWORD = "password";
+    public static final String CONFIG_KEY_TABLE = "table";
 
     public MongoDBTableSpace(String name, URI uri, JSONObject config) {
 
@@ -88,9 +93,6 @@ public class MongoDBTableSpace extends Tablespace {
         } else {
             mappedDBName = getConnectionInfo().getDbName();
         }
-
-
-
     }
 
     @Override
@@ -106,7 +108,7 @@ public class MongoDBTableSpace extends Tablespace {
     }
 
     @Override
-    public long getTableVolume(TableDesc table, Optional<EvalNode> filter) throws UnsupportedException {
+    public long getTableVolume(TableDesc table, Optional<EvalNode> filter) {
 
         long count = 0;
         try {
@@ -118,16 +120,12 @@ public class MongoDBTableSpace extends Tablespace {
         return count;
     }
 
-    @Override
-    public URI getTableUri(String databaseName, String tableName) {
-        return URI.create(this.getUri()+"&table="+tableName);
-    }
+
 
     @Override
     public List<Fragment> getSplits(String inputSourceId, TableDesc tableDesc, boolean requireSort, @Nullable EvalNode filterCondition) throws IOException, TajoException {
-        String[] hosts = new String[1];
-        hosts[0] = getUri().getHost();
-        MongoDBFragment mongoDBFragment = new MongoDBFragment(inputSourceId, getUri(),hosts );
+        long tableVolume = getTableVolume(tableDesc, Optional.empty());
+        MongoDBFragment mongoDBFragment = new MongoDBFragment(tableDesc.getUri(), inputSourceId, 0, tableVolume );
         return Lists.newArrayList(mongoDBFragment);
     }
 
@@ -161,17 +159,25 @@ public class MongoDBTableSpace extends Tablespace {
     public void createTable(TableDesc tableDesc, boolean ifNotExists) throws TajoException, IOException {
         if(tableDesc==null)
             throw new TajoRuntimeException(new NotImplementedException());
-        db.createCollection(tableDesc.getName());
+        MongoCollection<Document> table = db.getCollection(tableDesc.getName());
+
+        //TODO Handle this here. If empty throw exception or what?
+        boolean ifExist = (table.count()>0)?true:false;
+
+        //If meta  data provides. Create a table
+        if(STORAGE_PROPERTY.isMetadataProvided())
+            db.createCollection(IdentifierUtil.extractSimpleName(tableDesc.getName()));
     }
 
     @Override
     public void purgeTable(TableDesc tableDesc) throws IOException, TajoException {
-            db.getCollection(tableDesc.getName()).drop();
+        if(STORAGE_PROPERTY.isMetadataProvided())
+            db.getCollection(IdentifierUtil.extractSimpleName(tableDesc.getName())).drop();
     }
 
     @Override
     public void prepareTable(LogicalNode node) throws IOException, TajoException {
-
+        return;
     }
 
     @Override
@@ -194,13 +200,47 @@ public class MongoDBTableSpace extends Tablespace {
         return uri;
     }
 
+    @Override
+    public URI getTableUri(TableMeta meta, String databaseName, String tableName) {
+        //ToDo Find a better way this
+        String tableURI = "";
+        if(this.getUri().toASCIIString().contains("?"))
+            tableURI = this.getUri().toASCIIString()+"&"+CONFIG_KEY_TABLE+"="+tableName;
+        else
+            tableURI = this.getUri().toASCIIString()+"?"+CONFIG_KEY_TABLE+"="+tableName;
 
-    //Metadata
+        return URI.create(tableURI);
+    }
+
+    //@Override
+    public URI getTableUri( String databaseName, String tableName) {
+        //ToDo set the TableURI properly
+        return URI.create(this.getUri()+"&"+CONFIG_KEY_TABLE+"="+tableName);
+    }
+
+//    @Override
+//    public URI getTableUri(String databaseName, String tableName) {
+//        //ToDo set the TableURI properly
+//        return URI.create(this.getUri()+"&table="+tableName);
+//    }
+
+
+   // Metadata
     public MetadataProvider getMetadataProvider() {
         return new MongoDBMetadataProvider(this, mappedDBName);
     }
 
     public ConnectionInfo getConnectionInfo() {
         return connectionInfo;
+    }
+
+
+    //ToDo Make Sure this is not an issue
+    @Override
+    public Appender getAppender(OverridableConf queryContext,
+                                TaskAttemptId taskAttemptId, TableMeta meta, Schema schema, Path workDir)
+
+    {
+        return new MongoDBAppender(null, taskAttemptId,schema,meta,workDir,workDir.toUri());
     }
 }

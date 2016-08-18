@@ -21,6 +21,7 @@ package org.apache.tajo.engine.query;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.NamedTest;
 import org.apache.tajo.QueryTestCaseBase;
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -101,6 +102,26 @@ public class TestMultipleJoinTypes extends TestJoinQuery {
           "left outer join customer_broad_parts c on a.l_orderkey = c.c_custkey and c.c_custkey < 0")
   })
   public final void testInnerAndOuterWithEmpty() throws Exception {
+    runSimpleTests();
+  }
+
+  @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
+  @SimpleTest(queries = {
+      @QuerySpec("select * from \n" +
+          "(\n" +
+          " select * from (\n" +
+          "  select l_orderkey, count(*) as cnt from lineitem group by l_orderkey having count(*) > 0\n" +
+          " ) t\n" +
+          ") l \n" +
+          "join (\n" +
+          " select * from small_supplier\n" +
+          ") a on l.l_orderkey = a.s_suppkey\n" +
+          "left outer join (\n" +
+          " select * from nation\n" +
+          ") b on l.l_orderkey = b.n_nationkey\n")
+  })
+  public final void testExceedBroadcastThreshold() throws Exception {
     runSimpleTests();
   }
 }

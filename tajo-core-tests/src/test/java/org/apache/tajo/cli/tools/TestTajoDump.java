@@ -22,6 +22,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.auth.UserRoleInfo;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.FileUtil;
@@ -98,10 +99,11 @@ public class TestTajoDump extends QueryTestCaseBase {
         TajoDump.dump(client, userInfo, getCurrentDatabase(), false, false, false, printWriter);
         printWriter.flush();
         printWriter.close();
+        TableMeta meta = client.getTableDesc(getCurrentDatabase() + ".TableName1").getMeta();
 
         assertOutputResult("testDump3.result", new String(bos.toByteArray()),
             new String[]{"${index.path}", "${table.timezone}"},
-            new String[]{TablespaceManager.getDefault().getTableUri(getCurrentDatabase(), "test_idx").toString(),
+            new String[]{TablespaceManager.getDefault().getTableUri(meta, getCurrentDatabase(), "test_idx").toString(),
                 testingCluster.getConfiguration().getSystemTimezone().getID()});
         bos.close();
       } finally {
@@ -137,10 +139,12 @@ public class TestTajoDump extends QueryTestCaseBase {
         printWriter.flush();
         printWriter.close();
 
+        TableMeta meta = client.getTableDesc(getCurrentDatabase() + ".TableName3").getMeta();
+
         assertOutputResult("testPartitionsDump.result", new String(bos.toByteArray()),
             new String[]{"${partition.path1}", "${partition.path2}", "${table.timezone}"},
-            new String[]{TablespaceManager.getDefault().getTableUri(getCurrentDatabase(), "TableName3").toString(),
-                TablespaceManager.getDefault().getTableUri(getCurrentDatabase(), "TableName4").toString(),
+            new String[]{TablespaceManager.getDefault().getTableUri(meta, getCurrentDatabase(), "TableName3").toString(),
+                TablespaceManager.getDefault().getTableUri(meta, getCurrentDatabase(), "TableName4").toString(),
                 testingCluster.getConfiguration().getSystemTimezone().getID()});
 
         bos.close();

@@ -39,7 +39,7 @@
   <!--- Registered Scanner Handler -->
   <property>
     <name>tajo.storage.scanner-handler</name>
-    <value>text,json,raw,draw,rcfile,row,parquet,orc,sequencefile,avro,hbase,mongodb</value>
+    <value>text,json,raw,draw,rcfile,row,parquet,orc,sequencefile,avro,hbase,mongodb,ex_http_json</value>
   </property>
 
   <!--- Fragment Class Configurations -->
@@ -56,6 +56,14 @@
     <value>org.apache.tajo.storage.jdbc.JdbcFragment</value>
   </property>
   <property>
+    <name>tajo.storage.fragment.kind.mongodb</name>
+    <value>org.apache.tajo.storage.mongodb.MongoDBFragment</value>
+  </property>
+  <property>
+    <name>tajo.storage.fragment.kind.example-http</name>
+    <value>org.apache.tajo.storage.http.ExampleHttpFileFragment</value>
+  </property>
+  <property>
     <name>tajo.storage.fragment.serde.file</name>
     <value>org.apache.tajo.storage.fragment.FileFragmentSerde</value>
   </property>
@@ -70,6 +78,10 @@
   <property>
     <name>tajo.storage.fragment.serde.mongodb</name>
     <value>org.apache.tajo.storage.mongodb.MongoDBFragmentSerde</value>
+  </property>
+  <property>
+    <name>tajo.storage.fragment.serde.example-http</name>
+    <value>org.apache.tajo.storage.http.ExampleHttpFileFragmentSerde</value>
   </property>
 
   <!--- Scanner Handler -->
@@ -130,6 +142,10 @@
   <property>
     <name>tajo.storage.scanner-handler.mongodb.class</name>
     <value>org.apache.tajo.storage.mongodb.MongoDBScanner</value>
+  </property>
+  <property>
+    <name>tajo.storage.scanner-handler.ex_http_json.class</name>
+    <value>org.apache.tajo.storage.http.ExampleHttpJsonScanner</value>
   </property>
 
   <!--- Appender Handler -->
@@ -196,6 +212,11 @@
   <property>
     <name>tajo.storage.appender-handler.hfile.class</name>
     <value>org.apache.tajo.storage.hbase.HFileAppender</value>
+  </property>
+
+  <property>
+    <name>tajo.storage.appender-handler.mongodb.class</name>
+    <value>org.apache.tajo.storage.mongodb.MongoDBAppender</value>
   </property>
 
   <!--- Storage buffer -->

@@ -126,7 +126,7 @@ public class FileTablespace extends Tablespace {
   }
 
   @Override
-  public long getTableVolume(TableDesc table, Optional<EvalNode> filter) throws UnsupportedException {
+  public long getTableVolume(TableDesc table, Optional<EvalNode> filter) {
     Path path = new Path(table.getUri());
     ContentSummary summary;
     try {
@@ -169,7 +169,7 @@ public class FileTablespace extends Tablespace {
   }
 
   @Override
-  public URI getTableUri(String databaseName, String tableName) {
+  public URI getTableUri(TableMeta meta, String databaseName, String tableName) {
     return StorageUtil.concatPath(spacePath, databaseName, tableName).toUri();
   }
 

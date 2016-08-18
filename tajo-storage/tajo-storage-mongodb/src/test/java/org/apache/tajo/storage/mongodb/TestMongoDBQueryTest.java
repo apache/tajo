@@ -19,11 +19,7 @@ package org.apache.tajo.storage.mongodb;
 
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.storage.TablespaceManager;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 import java.net.URI;
 
@@ -33,7 +29,7 @@ public class TestMongoDBQueryTest  extends QueryTestCaseBase{
     static URI uri = server.getURI();
 
     public TestMongoDBQueryTest() {
-        super(server.mappedDbName);
+        super(server.MAPPEDDBNAME);
     }
 
     @BeforeClass
@@ -45,24 +41,57 @@ public class TestMongoDBQueryTest  extends QueryTestCaseBase{
     }
 
     @AfterClass
-    public static void teardown() throws Exception {
+    public static void tearDownClass() throws Exception  {
         server.stop();
     }
 
     @Before
     public void prepareTables() throws TajoException {
-       // executeString("create table tbl1 (*) tablespace test_spacename using json with ('path'='file1.json')");
-     //   executeString("create table github (*) tablespace test_spacename using ex_http_json with ('path'='github.json')");
+        if(!MongoDBTableSpace.STORAGE_PROPERTY.isMetadataProvided()) {
+            executeString("create table got (title,first_name,last_name) tablespace test_spacename using mongodb");
+            executeString("create table github (*) tablespace test_spacename using mongodb");
+            //   executeString("create table github (*) tablespace test_spacename using ex_http_json with ('path'='github.json')");
+        }
+    }
+
+    @After
+    public void dropTables() throws TajoException {
+        if(!MongoDBTableSpace.STORAGE_PROPERTY.isMetadataProvided()) {
+            executeString("drop table got");
+            executeString("drop table github");
+        }
     }
 
 
     @SimpleTest
     @Test
     public void testSelect() throws Exception {
-        //runSimpleTests();
-
-        executeString("select title, name.first_name from col1");
+        runSimpleTests();
     }
 
 
+    @SimpleTest
+    @Test
+    public void testSort() throws Exception {
+        runSimpleTests();
+    }
+
+    @SimpleTest
+    @Test
+    public void testGroupby() throws Exception {
+        runSimpleTests();
+    }
+
+    @SimpleTest
+    @Test
+    public void testJoin() throws Exception {
+        runSimpleTests();
+    }
+
+
+    @SimpleTest
+    @Test
+    public void testInsert() throws Exception {
+//        runSimpleTests();
+    }
 }

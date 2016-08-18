@@ -24,6 +24,10 @@ import org.apache.tajo.storage.mongodb.MongoDBFragmentProtos.MongoDBFragmentProt
 
 import java.net.URI;
 
+/**
+ * Fragment Serde for MongoFragment. Which is used to serialize and deserialize
+ * MongoDBFragment objects using ProtocolBuffer.
+ */
 public class MongoDBFragmentSerde implements FragmentSerde<MongoDBFragment, MongoDBFragmentProto> {
 
     @Override
@@ -34,14 +38,20 @@ public class MongoDBFragmentSerde implements FragmentSerde<MongoDBFragment, Mong
     @Override
     public MongoDBFragmentProto serialize(MongoDBFragment fragment) {
         return MongoDBFragmentProto.newBuilder()
-                .setInputSourceId(fragment.getInputSourceId())
                 .setUri(fragment.getUri().toASCIIString())
-                .addAllHosts(fragment.getHostNames())
+                .setTableName(fragment.getInputSourceId())
+                .setStartKey(fragment.getStartKey())
+                .setEndKey(fragment.getEndKey())
                 .build();
     }
 
     @Override
     public MongoDBFragment deserialize(MongoDBFragmentProto proto) {
-        return new MongoDBFragment(proto.getInputSourceId(), URI.create(proto.getUri()), proto.getHostsList());
+        return new MongoDBFragment(
+                URI.create(proto.getUri()),
+                proto.getTableName(),
+                proto.getStartKey(),
+                proto.getEndKey()
+        );
     }
 }

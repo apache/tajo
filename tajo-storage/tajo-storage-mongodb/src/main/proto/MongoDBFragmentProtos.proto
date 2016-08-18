@@ -26,6 +26,7 @@ import "CatalogProtos.proto";
 
 message MongoDBFragmentProto {
   required string uri = 1;
-  required string input_source_id = 2;
-  repeated string hosts = 3;
+  required string table_name = 2;
+  required int64 start_key = 3;
+  required int64 end_key = 4;
 }

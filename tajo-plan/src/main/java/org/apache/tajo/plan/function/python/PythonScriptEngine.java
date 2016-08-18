@@ -109,7 +109,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
         }
       } catch (Throwable t) {
         // ignore invalid functions
-        LOG.warn(t);
+        LOG.warn("Cannot parse function " + funcInfo, t);
       }
     }
     return functionDescs;
@@ -154,6 +154,11 @@ public class PythonScriptEngine extends TajoScriptEngine {
     ScalarFuncInfo mergeInfo;
     ScalarFuncInfo getPartialResultInfo;
     ScalarFuncInfo getFinalResultInfo;
+
+    @Override
+    public String toString() {
+      return className + "." + funcName;
+    }
   }
 
   private static class ScalarFuncInfo implements FunctionInfo {
@@ -170,6 +175,11 @@ public class PythonScriptEngine extends TajoScriptEngine {
       }
       this.funcName = funcName;
       this.paramNum = paramNum;
+    }
+
+    @Override
+    public String toString() {
+      return funcName;
     }
   }
 

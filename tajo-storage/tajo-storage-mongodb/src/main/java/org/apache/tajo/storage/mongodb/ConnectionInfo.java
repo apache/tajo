@@ -27,6 +27,11 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.exception.TajoInternalError;
 
+/*
+ConnectionInfo keeps the details about the mongodb server connection.
+MongoURI, db credentials and URI specific details such as schema, host, port
+ */
+
 public class ConnectionInfo {
 
     private static final Log LOG = LogFactory.getLog(MongoDBTableSpace.class);
@@ -41,10 +46,12 @@ public class ConnectionInfo {
     private int port;
     private Map<String, String> params;
 
+    //To create an instance using provided string of a URI
     public static ConnectionInfo fromURI(String originalUri) {
         return fromURI(URI.create(originalUri));
     }
 
+    //creates a instance using provided URI
     public static ConnectionInfo fromURI(URI originalUri) {
         final String uriStr = originalUri.toASCIIString();
         URI uri = originalUri;
@@ -82,24 +89,22 @@ public class ConnectionInfo {
             }
         }
 
-        if (params.containsKey("table")) {
-            connInfo.tableName = params.remove("table");
+        if (params.containsKey(MongoDBTableSpace.CONFIG_KEY_TABLE)) {
+            connInfo.tableName = params.remove(MongoDBTableSpace.CONFIG_KEY_TABLE);
         }
 
-        if (params.containsKey("user")) {
-            connInfo.user = params.remove("user");
+        if (params.containsKey(MongoDBTableSpace.CONFIG_KEY_USERNAME)) {
+            connInfo.user = params.remove(MongoDBTableSpace.CONFIG_KEY_USERNAME);
         }
-        if (params.containsKey("password")) {
-            connInfo.password = params.remove("password");
+        if (params.containsKey(MongoDBTableSpace.CONFIG_KEY_PASSWORD)) {
+            connInfo.password = params.remove(MongoDBTableSpace.CONFIG_KEY_PASSWORD);
         }
-
 
         connInfo.params = params;
 
         String mongoDbURIStr = "";
-        //mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]
 
-        //Generate the URI
+        //Generate the MongoURI
         mongoDbURIStr+= connInfo.getScheme();
         mongoDbURIStr+="://";
         if(connInfo.getUser() !=null)
@@ -124,7 +129,6 @@ public class ConnectionInfo {
     {
         return  mongoDBURI;
     }
-
 
     public String getScheme() {
         return scheme;

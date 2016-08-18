@@ -172,6 +172,7 @@ enum ResultCode {
   UNSUPPORTED_DATATYPE                  = 1003; // SQLState: ? - Unsupported data type
   INVALID_TABLE_PROPERTY                = 1004; // SQLState: ? - Invalid Table Property
   MISSING_TABLE_PROPERTY                = 1005; // SQLState: ? - Missing table property
+  INVALID_TABLESPACE_URI                = 1006;
 
   // Client Connection
   CLIENT_CONNECTION_EXCEPTION           = 1101; // SQLState: 08000 - Client connection error
