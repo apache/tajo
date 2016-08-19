@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -54,9 +54,12 @@ import java.util.Optional;
 
 public class MongoDBTableSpace extends Tablespace {
 
-    private static final Log LOG = LogFactory.getLog(MongoDBTableSpace.class);
-
-
+    //Config Keys
+    public static final String CONFIG_KEY_MAPPED_DATABASE = "mapped_database";
+    public static final String CONFIG_KEY_CONN_PROPERTIES = "connection_properties";
+    public static final String CONFIG_KEY_USERNAME = "user";
+    public static final String CONFIG_KEY_PASSWORD = "password";
+    public static final String CONFIG_KEY_TABLE = "table";
     //Table Space Properties
     static final StorageProperty STORAGE_PROPERTY = new StorageProperty("rowstore", // type is to be defined
             false,  //not movable
@@ -67,20 +70,12 @@ public class MongoDBTableSpace extends Tablespace {
             true, // Insert
             true, //direct insert
             true);// result staging
-
-    //Mongo Client object
-    private ConnectionInfo connectionInfo;
+    private static final Log LOG = LogFactory.getLog(MongoDBTableSpace.class);
     protected MongoClient mongoClient;
     protected MongoDatabase db;
     protected String mappedDBName;
-
-
-    //Config Keys
-    public static final String CONFIG_KEY_MAPPED_DATABASE = "mapped_database";
-    public static final String CONFIG_KEY_CONN_PROPERTIES = "connection_properties";
-    public static final String CONFIG_KEY_USERNAME = "user";
-    public static final String CONFIG_KEY_PASSWORD = "password";
-    public static final String CONFIG_KEY_TABLE = "table";
+    //Mongo Client object
+    private ConnectionInfo connectionInfo;
 
     public MongoDBTableSpace(String name, URI uri, JSONObject config) {
 
@@ -112,7 +107,7 @@ public class MongoDBTableSpace extends Tablespace {
 
         long count = 0;
         try {
-            String[] nameSplited =  IdentifierUtil.splitFQTableName(table.getName());
+            String[] nameSplited = IdentifierUtil.splitFQTableName(table.getName());
             count = db.getCollection(nameSplited[1]).count();
         } catch (Exception e) {
             throw new TajoInternalError(e);
@@ -121,11 +116,10 @@ public class MongoDBTableSpace extends Tablespace {
     }
 
 
-
     @Override
     public List<Fragment> getSplits(String inputSourceId, TableDesc tableDesc, boolean requireSort, @Nullable EvalNode filterCondition) throws IOException, TajoException {
         long tableVolume = getTableVolume(tableDesc, Optional.empty());
-        MongoDBFragment mongoDBFragment = new MongoDBFragment(tableDesc.getUri(), inputSourceId, 0, tableVolume );
+        MongoDBFragment mongoDBFragment = new MongoDBFragment(tableDesc.getUri(), inputSourceId, 0, tableVolume);
         return Lists.newArrayList(mongoDBFragment);
     }
 
@@ -157,21 +151,21 @@ public class MongoDBTableSpace extends Tablespace {
 
     @Override
     public void createTable(TableDesc tableDesc, boolean ifNotExists) throws TajoException, IOException {
-        if(tableDesc==null)
+        if (tableDesc == null)
             throw new TajoRuntimeException(new NotImplementedException());
         MongoCollection<Document> table = db.getCollection(tableDesc.getName());
 
         //TODO Handle this here. If empty throw exception or what?
-        boolean ifExist = (table.count()>0)?true:false;
+        boolean ifExist = (table.count() > 0) ? true : false;
 
         //If meta  data provides. Create a table
-        if(STORAGE_PROPERTY.isMetadataProvided())
+        if (STORAGE_PROPERTY.isMetadataProvided())
             db.createCollection(IdentifierUtil.extractSimpleName(tableDesc.getName()));
     }
 
     @Override
     public void purgeTable(TableDesc tableDesc) throws IOException, TajoException {
-        if(STORAGE_PROPERTY.isMetadataProvided())
+        if (STORAGE_PROPERTY.isMetadataProvided())
             db.getCollection(IdentifierUtil.extractSimpleName(tableDesc.getName())).drop();
     }
 
@@ -204,18 +198,18 @@ public class MongoDBTableSpace extends Tablespace {
     public URI getTableUri(TableMeta meta, String databaseName, String tableName) {
         //ToDo Find a better way this
         String tableURI = "";
-        if(this.getUri().toASCIIString().contains("?"))
-            tableURI = this.getUri().toASCIIString()+"&"+CONFIG_KEY_TABLE+"="+tableName;
+        if (this.getUri().toASCIIString().contains("?"))
+            tableURI = this.getUri().toASCIIString() + "&" + CONFIG_KEY_TABLE + "=" + tableName;
         else
-            tableURI = this.getUri().toASCIIString()+"?"+CONFIG_KEY_TABLE+"="+tableName;
+            tableURI = this.getUri().toASCIIString() + "?" + CONFIG_KEY_TABLE + "=" + tableName;
 
         return URI.create(tableURI);
     }
 
     //@Override
-    public URI getTableUri( String databaseName, String tableName) {
+    public URI getTableUri(String databaseName, String tableName) {
         //ToDo set the TableURI properly
-        return URI.create(this.getUri()+"&"+CONFIG_KEY_TABLE+"="+tableName);
+        return URI.create(this.getUri() + "&" + CONFIG_KEY_TABLE + "=" + tableName);
     }
 
 //    @Override
@@ -225,7 +219,7 @@ public class MongoDBTableSpace extends Tablespace {
 //    }
 
 
-   // Metadata
+    // Metadata
     public MetadataProvider getMetadataProvider() {
         return new MongoDBMetadataProvider(this, mappedDBName);
     }
@@ -241,6 +235,6 @@ public class MongoDBTableSpace extends Tablespace {
                                 TaskAttemptId taskAttemptId, TableMeta meta, Schema schema, Path workDir)
 
     {
-        return new MongoDBAppender(null, taskAttemptId,schema,meta,workDir,workDir.toUri());
+        return new MongoDBAppender(null, taskAttemptId, schema, meta, workDir, workDir.toUri());
     }
 }

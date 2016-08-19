@@ -17,8 +17,6 @@
  */
 package org.apache.tajo.storage.mongodb;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaBuilder;
@@ -43,19 +41,19 @@ public class TestMongoDBDocumentSerializer {
                 .add(new Column("last_name", TajoDataTypes.Type.TEXT))
                 .build();
 
-        MongoDBDocumentSerializer documentSerializer = new MongoDBDocumentSerializer(schem,null);
+        MongoDBDocumentSerializer documentSerializer = new MongoDBDocumentSerializer(schem, null);
 
         Tuple tuple = new VTuple(3);
-        tuple.put(0,DatumFactory.createText("Kingslayer"));
-        tuple.put(1,DatumFactory.createText("Jaime"));
-        tuple.put(2,DatumFactory.createText("Lannister"));
+        tuple.put(0, DatumFactory.createText("Kingslayer"));
+        tuple.put(1, DatumFactory.createText("Jaime"));
+        tuple.put(2, DatumFactory.createText("Lannister"));
         Document md = new Document();
 
-        documentSerializer.serialize(tuple,md);
+        documentSerializer.serialize(tuple, md);
 
-        assertEquals("Kingslayer",md.getString("title"));
-        assertEquals("Jaime",md.getString("first_name"));
-        assertEquals("Lannister",md.getString("last_name"));
+        assertEquals("Kingslayer", md.getString("title"));
+        assertEquals("Jaime", md.getString("first_name"));
+        assertEquals("Lannister", md.getString("last_name"));
 
     }
 
@@ -68,21 +66,21 @@ public class TestMongoDBDocumentSerializer {
                 .add(new Column("single", TajoDataTypes.Type.BOOLEAN))
                 .build();
 
-        MongoDBDocumentSerializer documentSerializer = new MongoDBDocumentSerializer(schem,null);
+        MongoDBDocumentSerializer documentSerializer = new MongoDBDocumentSerializer(schem, null);
 
         Tuple tuple = new VTuple(4);
-        tuple.put(0,DatumFactory.createText("Mr"));
-        tuple.put(1,DatumFactory.createInt4(24));
-        tuple.put(2,DatumFactory.createFloat8(165.98));
-        tuple.put(3,DatumFactory.createBool(true));
+        tuple.put(0, DatumFactory.createText("Mr"));
+        tuple.put(1, DatumFactory.createInt4(24));
+        tuple.put(2, DatumFactory.createFloat8(165.98));
+        tuple.put(3, DatumFactory.createBool(true));
         Document md = new Document();
 
-        documentSerializer.serialize(tuple,md);
+        documentSerializer.serialize(tuple, md);
 
-        assertEquals("Mr",md.get("title"));
-        assertEquals(24,md.get("age"));
-        assertEquals(165.98,md.get("height"));
-        assertEquals(true,md.get("single"));
+        assertEquals("Mr", md.get("title"));
+        assertEquals(24, md.get("age"));
+        assertEquals(165.98, md.get("height"));
+        assertEquals(true, md.get("single"));
 
     }
 

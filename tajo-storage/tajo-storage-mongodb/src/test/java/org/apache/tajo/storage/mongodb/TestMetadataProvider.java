@@ -22,16 +22,12 @@ import org.apache.tajo.catalog.MetadataProvider;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
-import org.junit.*;
+import org.junit.Test;
 
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
-/**
- * Created by janaka on 6/8/16.
- */
 
 public class TestMetadataProvider {
     static MongoDBTestServer server = MongoDBTestServer.getInstance();
@@ -71,6 +67,7 @@ public class TestMetadataProvider {
 
         assertEquals(expected, found);
     }
+
     @Test
     public void testGetTableDescription() throws Exception {
         Tablespace tablespace = TablespaceManager.get(server.getURI());
@@ -78,20 +75,14 @@ public class TestMetadataProvider {
 
         for (String tableName : server.collectionNames) {
             TableDesc table = provider.getTableDesc(null, tableName);
-            assertEquals(   server.MAPPEDDBNAME +"."+tableName, table.getName());
+            assertEquals(server.MAPPEDDBNAME + "." + tableName, table.getName());
             assertEquals(server.getURI() + "?table=" + tableName, table.getUri().toASCIIString());
 
             //ToDo Check the stats
         }
 
 
-
     }
-
-
-
-
-
 
 
 }

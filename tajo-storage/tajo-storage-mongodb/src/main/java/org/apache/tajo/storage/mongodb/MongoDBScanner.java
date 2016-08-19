@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,10 +26,8 @@ import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.LogicalNode;
-import org.apache.tajo.storage.FileScanner;
 import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.fragment.AbstractFileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.text.TextLineParsingError;
 
@@ -41,21 +39,19 @@ import java.io.IOException;
 * */
 
 //Todo Remove FileScanner
-public class MongoDBScanner implements Scanner{
-
-    private MongoDBCollectionReader collectionReader;
+public class MongoDBScanner implements Scanner {
 
     private final TableMeta meta;
     private final Schema schema;
     private final MongoDBFragment fragment;
-
-    private Column [] targets;
+    private MongoDBCollectionReader collectionReader;
+    private Column[] targets;
 
     private boolean inited;
 
     public MongoDBScanner(Configuration conf, Schema schema, TableMeta meta, Fragment fragment) {
         this.schema = schema;
-        this.meta    = meta;
+        this.meta = meta;
         this.fragment = (MongoDBFragment) fragment;
     }
 
@@ -81,15 +77,15 @@ public class MongoDBScanner implements Scanner{
 
     @Override
     public void reset() throws IOException {
-        MongoDBDocumentDeserializer deserializer = new MongoDBDocumentDeserializer(schema,meta,targets);
-        collectionReader = new MongoDBCollectionReader(ConnectionInfo.fromURI(fragment.getUri()),deserializer,targets.length);
+        MongoDBDocumentDeserializer deserializer = new MongoDBDocumentDeserializer(schema, meta, targets);
+        collectionReader = new MongoDBCollectionReader(ConnectionInfo.fromURI(fragment.getUri()), deserializer, targets.length);
 
         collectionReader.init();
     }
 
     @Override
     public void close() throws IOException {
-    return;
+        return;
     }
 
     @Override

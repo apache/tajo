@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,14 +18,14 @@
 package org.apache.tajo.storage.mongodb;
 
 
-import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
-
-import com.mongodb.*;
+import com.mongodb.MongoClientURI;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.exception.TajoInternalError;
+
+import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 
 /*
 ConnectionInfo keeps the details about the mongodb server connection.
@@ -65,7 +65,7 @@ public class ConnectionInfo {
         //Set the db name
         String path = uri.getPath();
         if (path != null && !path.isEmpty()) {
-            String [] pathElements = path.substring(1).split("/");
+            String[] pathElements = path.substring(1).split("/");
             if (pathElements.length != 1) {
                 throw new TajoInternalError("Invalid JDBC path: " + path);
             }
@@ -76,12 +76,12 @@ public class ConnectionInfo {
         Map<String, String> params = new HashMap<>();
         int paramIndex = uriStr.indexOf("?");
         if (paramIndex > 0) {
-            String parameterPart = uriStr.substring(paramIndex+1, uriStr.length());
+            String parameterPart = uriStr.substring(paramIndex + 1, uriStr.length());
 
-            String [] eachParam = parameterPart.split("&");
+            String[] eachParam = parameterPart.split("&");
 
-            for (String each: eachParam) {
-                String [] keyValues = each.split("=");
+            for (String each : eachParam) {
+                String[] keyValues = each.split("=");
                 if (keyValues.length != 2) {
                     throw new TajoInternalError("Invalid URI Parameters: " + parameterPart);
                 }
@@ -105,29 +105,27 @@ public class ConnectionInfo {
         String mongoDbURIStr = "";
 
         //Generate the MongoURI
-        mongoDbURIStr+= connInfo.getScheme();
-        mongoDbURIStr+="://";
-        if(connInfo.getUser() !=null)
-        {
-            mongoDbURIStr+= connInfo.getUser();
-            if(connInfo.getPassword() !=null)
-                mongoDbURIStr+=":"+ connInfo.getPassword();
-            mongoDbURIStr+="@";
+        mongoDbURIStr += connInfo.getScheme();
+        mongoDbURIStr += "://";
+        if (connInfo.getUser() != null) {
+            mongoDbURIStr += connInfo.getUser();
+            if (connInfo.getPassword() != null)
+                mongoDbURIStr += ":" + connInfo.getPassword();
+            mongoDbURIStr += "@";
         }
-        mongoDbURIStr+= connInfo.getHost();
-        mongoDbURIStr+=":";
-        mongoDbURIStr+= connInfo.getPort();
-        mongoDbURIStr+="/";
-        mongoDbURIStr+= connInfo.getDbName();
+        mongoDbURIStr += connInfo.getHost();
+        mongoDbURIStr += ":";
+        mongoDbURIStr += connInfo.getPort();
+        mongoDbURIStr += "/";
+        mongoDbURIStr += connInfo.getDbName();
 
         LOG.info(mongoDbURIStr);
         connInfo.mongoDBURI = new MongoClientURI(mongoDbURIStr);
         return connInfo;
     }
 
-    public MongoClientURI getMongoDBURI()
-    {
-        return  mongoDBURI;
+    public MongoClientURI getMongoDBURI() {
+        return mongoDBURI;
     }
 
     public String getScheme() {

@@ -28,7 +28,7 @@ public class TestConnectionInfo {
 
         ConnectionInfo connInfo = ConnectionInfo.fromURI("mongodb://localhost:1336/db1?table=tb1&user=testuser&password=testpass");
 
-        assertEquals(connInfo.getMongoDBURI().getURI(),"mongodb://testuser:testpass@localhost:1336/db1");
+        assertEquals(connInfo.getMongoDBURI().getURI(), "mongodb://testuser:testpass@localhost:1336/db1");
         assertEquals(connInfo.getScheme(), "mongodb");
         assertEquals(connInfo.getHost(), "localhost");
         assertEquals(connInfo.getPort(), 1336);
@@ -55,8 +55,7 @@ public class TestConnectionInfo {
     }
 
     @Test
-    public final void testNewStructure()
-    {
-        
+    public final void testNewStructure() {
+
     }
 }

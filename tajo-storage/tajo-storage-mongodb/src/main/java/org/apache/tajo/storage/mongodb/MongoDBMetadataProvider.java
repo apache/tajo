@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,9 +21,11 @@ package org.apache.tajo.storage.mongodb;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.MongoIterable;
-import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.MetadataProvider;
+import org.apache.tajo.catalog.SchemaBuilder;
+import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.UndefinedTablespaceException;
 import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.util.KeyValueSet;
@@ -40,13 +42,12 @@ import java.util.Collections;
 * * */
 public class MongoDBMetadataProvider implements MetadataProvider {
 
+    MongoDatabase db;
     private MongoDBTableSpace tableSpace;
     private String mappedDbName;
     private ConnectionInfo connectionInfo;
-    MongoDatabase db;
 
-    public MongoDBMetadataProvider(MongoDBTableSpace tableSpace, String dbName)
-    {
+    public MongoDBMetadataProvider(MongoDBTableSpace tableSpace, String dbName) {
         this.tableSpace = tableSpace;
         this.mappedDbName = dbName;
 
@@ -79,7 +80,7 @@ public class MongoDBMetadataProvider implements MetadataProvider {
     public Collection<String> getTables(@Nullable String schemaPattern, @Nullable String tablePattern) {
 
         //Get a list of table(=collection) names
-        MongoIterable<String> collectionList =  db.listCollectionNames();
+        MongoIterable<String> collectionList = db.listCollectionNames();
 
         //Map to a string list and return
         Collection<String> list = new ArrayList<String>();
@@ -102,7 +103,7 @@ public class MongoDBMetadataProvider implements MetadataProvider {
 //                        .add(new Column("last_name", TajoDataTypes.Type.TEXT))
                         .build(),
                 tbMeta,
-                tableSpace.getTableUri(null,null, tableName));
+                tableSpace.getTableUri(null, null, tableName));
 
         final TableStats stats = new TableStats();
         stats.setNumRows(-1); // unknown

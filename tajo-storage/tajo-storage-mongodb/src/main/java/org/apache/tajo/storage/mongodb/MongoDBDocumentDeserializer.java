@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,7 +20,6 @@ package org.apache.tajo.storage.mongodb;
 
 
 import com.google.common.collect.Lists;
-import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
@@ -35,7 +34,6 @@ import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.text.TextLineDeserializer;
 import org.apache.tajo.storage.text.TextLineParsingError;
 import org.bson.Document;
 
@@ -50,18 +48,16 @@ import java.util.TimeZone;
 * */
 
 public class MongoDBDocumentDeserializer {
-    private JSONParser parser;
-
-    // Full Path -> Type
-    private final Map<String, Type> types;
-    private final String [] projectedPaths;
-    private final CharsetDecoder decoder = CharsetUtil.getDecoder(CharsetUtil.UTF_8);
-
-    private final TimeZone timezone;
     protected final Schema schema;
     protected final TableMeta meta;
+    // Full Path -> Type
+    private final Map<String, Type> types;
+    private final String[] projectedPaths;
+    private final CharsetDecoder decoder = CharsetUtil.getDecoder(CharsetUtil.UTF_8);
+    private final TimeZone timezone;
+    private JSONParser parser;
 
-    public MongoDBDocumentDeserializer(Schema schema, TableMeta meta, Column [] projected) {
+    public MongoDBDocumentDeserializer(Schema schema, TableMeta meta, Column[] projected) {
         this.schema = schema;
         this.meta = meta;
 
@@ -79,8 +75,6 @@ public class MongoDBDocumentDeserializer {
     }
 
     /**
-     *
-     *
      * @param object
      * @param pathElements
      * @param depth
@@ -90,7 +84,7 @@ public class MongoDBDocumentDeserializer {
      */
     private void getValue(JSONObject object,
                           String fullPath,
-                          String [] pathElements,
+                          String[] pathElements,
                           int depth,
                           int fieldIndex,
                           Tuple output) throws IOException {
@@ -208,7 +202,7 @@ public class MongoDBDocumentDeserializer {
             case RECORD:
                 JSONObject nestedObject = (JSONObject) object.get(fieldName);
                 if (nestedObject != null) {
-                    getValue(nestedObject, fullPath + "/" + pathElements[depth+1], pathElements, depth + 1, fieldIndex, output);
+                    getValue(nestedObject, fullPath + "/" + pathElements[depth + 1], pathElements, depth + 1, fieldIndex, output);
                 } else {
                     output.put(fieldIndex, NullDatum.get());
                 }
@@ -240,7 +234,7 @@ public class MongoDBDocumentDeserializer {
         }
 
         for (int i = 0; i < projectedPaths.length; i++) {
-          String [] paths = projectedPaths[i].split(NestedPathUtil.PATH_DELIMITER);
+            String[] paths = projectedPaths[i].split(NestedPathUtil.PATH_DELIMITER);
             getValue(object, paths[0], paths, 0, i, output);
 
             //output.put(i, DatumFactory.createText( doc.get(projectedPaths[i]).toString() ));

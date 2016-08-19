@@ -17,10 +17,9 @@
  */
 package org.apache.tajo.storage.mongodb;
 
-/**
- * Created by janaka on 6/7/16.
- */
-import com.mongodb.*;
+
+import com.mongodb.Block;
+import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -48,58 +47,36 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-public class MongoDBTestServer  {
-
-    private static final Log LOG = LogFactory.getLog(MongoDBTableSpace.class);
-
+public class MongoDBTestServer {
 
     //mongo server details
     public static final int PORT = 12345;
     public static final String HOST = "localhost";
     public static final String DBNAME = "test_dbname";
     public static final String MAPPEDDBNAME = "test_mapped_dbname";
-
     //tajo tableSpace name
     public static final String SPACE_NAME = "test_spacename";
-
-    // instance for singleton server
-    private static MongoDBTestServer instance;
-
-
+    private static final Log LOG = LogFactory.getLog(MongoDBTableSpace.class);
     //Mongo Server componenets
     private static final MongodStarter starter = MongodStarter.getDefaultInstance();
+    // instance for singleton server
+    private static MongoDBTestServer instance;
+    //Collection names (table names) to be created inside mongodb
+    public String[] collectionNames = {"github", "got"};
     private MongodExecutable _mongodExe;
     private MongodProcess _mongod;
     private MongoClient _mongo;
-
     //File names to load data
-    private String[] filenames = {"file1.json","file2.json"};
-    //Collection names (table names) to be created inside mongodb
-    public String[] collectionNames = {"github","got"};
+    private String[] filenames = {"file1.json", "file2.json"};
 
-
-    //server object can be created using this method
-    public static MongoDBTestServer getInstance()
-    {
-        if(instance==null)
-        {
-            try {
-                instance = new MongoDBTestServer();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        return instance;
-    }
 
     // private constructor
-    private MongoDBTestServer () throws IOException, URISyntaxException {
+    private MongoDBTestServer() throws IOException, URISyntaxException {
         _mongodExe = starter.prepare(new MongodConfigBuilder()
                 .version(Version.Main.PRODUCTION)
                 .net(new Net(PORT, Network.localhostIsIPv6()))
 
-                .cmdOptions( new MongoCmdOptionsBuilder().
+                .cmdOptions(new MongoCmdOptionsBuilder().
                         useStorageEngine("mmapv1").
                         build())
                 .build());
@@ -110,26 +87,45 @@ public class MongoDBTestServer  {
         loadData();
     }
 
+    //server object can be created using this method
+    public static MongoDBTestServer getInstance() {
+        if (instance == null) {
+            try {
+                instance = new MongoDBTestServer();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        return instance;
+    }
+
+    //To load files
+    private static File getRequestedFile(String path) throws FileNotFoundException, URISyntaxException {
+
+        URL url = ClassLoader.getSystemResource("dataset/" + path);
+
+        if (url == null) {
+            throw new FileNotFoundException(path);
+        }
+        return new File(url.toURI());
+    }
+
     //To stop the server
-    public void stop()
-    {
+    public void stop() {
         _mongod.stop();
         _mongodExe.stop();
         instance = null;
     }
 
     //Returns the url which can be used to connet to the server instance
-    public URI getURI()
-    {
+    public URI getURI() {
         try {
-            return new URI("mongodb://" + HOST + ":" + PORT + "/"+ DBNAME);
-        }
-        catch (Exception e)
-        {
+            return new URI("mongodb://" + HOST + ":" + PORT + "/" + DBNAME);
+        } catch (Exception e) {
             return null;
         }
     }
-
 
     //Start mongo process
     private MongosProcess startMongos(int port, int defaultConfigPort, String defaultHost) throws UnknownHostException,
@@ -157,13 +153,12 @@ public class MongoDBTestServer  {
         return mongod;
     }
 
-
     //Register the new table space for testing
     private void registerTablespace() throws IOException {
         JSONObject configElements = new JSONObject();
         configElements.put(MongoDBTableSpace.CONFIG_KEY_MAPPED_DATABASE, MAPPEDDBNAME);
 
-        MongoDBTableSpace tablespace = new MongoDBTableSpace(SPACE_NAME,getURI(),configElements);
+        MongoDBTableSpace tablespace = new MongoDBTableSpace(SPACE_NAME, getURI(), configElements);
         tablespace.init(new TajoConf());
 
 
@@ -172,13 +167,13 @@ public class MongoDBTestServer  {
 
     //Create tables and Load data into the mongo server instance
     private void loadData() throws IOException, URISyntaxException {
-        MongoDatabase db =  _mongo.getDatabase(DBNAME);
-        for(int i=0; i<filenames.length;i++) {
+        MongoDatabase db = _mongo.getDatabase(DBNAME);
+        for (int i = 0; i < filenames.length; i++) {
 
             db.createCollection(collectionNames[i]);
             MongoCollection coll = db.getCollection(collectionNames[i]);
 
-            String fileContent = new Scanner( getRequestedFile(filenames[i])).useDelimiter("\\Z").next();
+            String fileContent = new Scanner(getRequestedFile(filenames[i])).useDelimiter("\\Z").next();
 
             //Document list
             List<Document> documentList = new ArrayList<Document>();
@@ -195,31 +190,19 @@ public class MongoDBTestServer  {
 
             coll.insertMany(documentList);
 
-             FindIterable<Document> docs =  coll.find();
+            FindIterable<Document> docs = coll.find();
 
-                docs.forEach(new Block<Document>() {
-                    @Override
-                    public void apply(final Document document) {
-                        LOG.info(document.toJson());
-                    }
-                });
+            docs.forEach(new Block<Document>() {
+                @Override
+                public void apply(final Document document) {
+                    LOG.info(document.toJson());
+                }
+            });
         }
-    }
-
-    //To load files
-    private static File getRequestedFile(String path) throws FileNotFoundException, URISyntaxException {
-
-        URL url = ClassLoader.getSystemResource("dataset/" + path);
-
-        if (url == null) {
-            throw new FileNotFoundException(path);
-        }
-        return new File(url.toURI());
     }
 
     //Return a mongo client which directly connect to the mongo database.
-    public MongoClient getMongoClient()
-    {
+    public MongoClient getMongoClient() {
         return _mongo;
     }
 }

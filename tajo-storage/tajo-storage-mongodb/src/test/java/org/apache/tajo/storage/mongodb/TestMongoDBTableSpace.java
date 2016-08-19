@@ -31,21 +31,21 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by janaka on 6/2/16.
- */
+
 public class TestMongoDBTableSpace {
     //mongodb://<dbuser>:<dbpassword>@ds017231.mlab.com:17231/tajo_test
     static MongoDBTestServer server = MongoDBTestServer.getInstance();
     static URI uri = server.getURI();
 
     @Test
-    public void testTablespaceHandler()
-    {
+    public void testTablespaceHandler() {
         assertTrue((TablespaceManager.getByName(server.SPACE_NAME)) instanceof MongoDBTableSpace);
         assertEquals(server.SPACE_NAME, (TablespaceManager.getByName(server.SPACE_NAME).getName()));
 
@@ -55,7 +55,7 @@ public class TestMongoDBTableSpace {
 
         //Test the URI same
         assertEquals(uri.toASCIIString(), TablespaceManager.get(uri).getUri().toASCIIString());
-  }
+    }
 
     @Test(timeout = 1000, expected = TajoRuntimeException.class)
     public void testCreateTable() throws IOException, TajoException {
@@ -77,7 +77,7 @@ public class TestMongoDBTableSpace {
                 server.getURI());
 
         //Test create and delete if meta data provided
-        if(MongoDBTableSpace.STORAGE_PROPERTY.isMetadataProvided()) {
+        if (MongoDBTableSpace.STORAGE_PROPERTY.isMetadataProvided()) {
             space.createTable(tableDesc, false);
 
             //Check whether the created table is in the collection
@@ -98,7 +98,7 @@ public class TestMongoDBTableSpace {
             //Purg the table
             space.purgeTable(tableDesc);
             final Set<String> found_after = Sets.newHashSet(space.getMetadataProvider().getTables(null, null));
-            assertFalse(found_after.contains( "Table1"));
+            assertFalse(found_after.contains("Table1"));
 
         }
     }
@@ -107,21 +107,21 @@ public class TestMongoDBTableSpace {
     public void testTableVolume() throws IOException, TajoException {
         Tablespace space = TablespaceManager.getByName(server.SPACE_NAME);
         Map<String, Integer> tableSizes = new HashMap<String, Integer>();
-        tableSizes.put("github",4);
-        tableSizes.put("got",5);
-        for (String tbl:server.collectionNames) {
+        tableSizes.put("github", 4);
+        tableSizes.put("got", 5);
+        for (String tbl : server.collectionNames) {
 
-           // assertEquals(1,space.getTableVolume(tableDesc, Optional.empty()));
+            // assertEquals(1,space.getTableVolume(tableDesc, Optional.empty()));
 
-          //  long a = 1;b
+            //  long a = 1;b
             TableDesc tbDesc = new TableDesc(
                     IdentifierUtil.buildFQName(server.MAPPEDDBNAME, tbl),
                     SchemaBuilder.builder()
                             .build(),
                     null,
-                    space.getTableUri(null,null, tbl));
+                    space.getTableUri(null, null, tbl));
 
-            assertEquals((int)tableSizes.get(tbl), space.getTableVolume(tbDesc,Optional.empty()));
+            assertEquals((int) tableSizes.get(tbl), space.getTableVolume(tbDesc, Optional.empty()));
 
         }
     }

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,7 +27,6 @@ import org.apache.tajo.storage.text.TextLineParsingError;
 import org.bson.Document;
 
 import java.io.IOException;
-
 import java.nio.charset.CharsetEncoder;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,36 +36,35 @@ import java.util.List;
     Used within the MongoScanner to read tuples.
  */
 public class MongoDBCollectionReader {
+    private final CharsetEncoder encoder = CharsetUtil.getEncoder(CharsetUtil.UTF_8);
+    List<Document> documentList;
     private ConnectionInfo connectionInfo;
     private MongoDBDocumentDeserializer deserializer;
     private int targetLength;
-    List<Document> documentList;
     private int currentIndex;
-    private final CharsetEncoder encoder = CharsetUtil.getEncoder(CharsetUtil.UTF_8);
 
 
-    public MongoDBCollectionReader(ConnectionInfo connectionInfo, MongoDBDocumentDeserializer deserializer , int targetLength)
-    {
+    public MongoDBCollectionReader(ConnectionInfo connectionInfo, MongoDBDocumentDeserializer deserializer, int targetLength) {
         this.connectionInfo = connectionInfo;
         this.deserializer = deserializer;
         this.targetLength = targetLength;
     }
 
-    public void init() throws IOException
-    {
+    public void init() throws IOException {
         currentIndex = 0;
         MongoClient mongoClient = new MongoClient(connectionInfo.getMongoDBURI());
         MongoDatabase db = mongoClient.getDatabase(connectionInfo.getDbName());
 
         MongoCollection<Document> collection = db.getCollection(connectionInfo.getTableName());
-        documentList =(List<Document>) collection.find().into(
-                new ArrayList<Document>());;
+        documentList = (List<Document>) collection.find().into(
+                new ArrayList<Document>());
+        ;
 
         deserializer.init();
     }
 
     public Tuple readTuple() throws IOException, TextLineParsingError {
-        if(currentIndex>=documentList.size()) return null;
+        if (currentIndex >= documentList.size()) return null;
 
         Tuple outTuple = new VTuple(targetLength);
 
@@ -76,9 +74,8 @@ public class MongoDBCollectionReader {
 
     }
 
-    public float getProgress()
-    {
-        return ((float)currentIndex) / documentList.size();
+    public float getProgress() {
+        return ((float) currentIndex) / documentList.size();
     }
 
 }
