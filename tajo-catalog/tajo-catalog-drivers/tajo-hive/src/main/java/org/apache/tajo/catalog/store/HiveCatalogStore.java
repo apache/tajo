@@ -47,6 +47,8 @@ import org.apache.tajo.algebra.IsNullPredicate;
 import org.apache.tajo.algebra.JsonHelper;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
+import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -57,10 +59,12 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.util.PartitionFilterAlgebraVisitor;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.type.TypeProtobufEncoder;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.ProtoUtil;
 import org.apache.thrift.TException;
 
 import java.io.File;
@@ -655,10 +659,10 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         dropPartition(databaseName, tableName, partitionDesc);
         break;
       case SET_PROPERTY:
-        // TODO - not implemented yet
+        setProperties(databaseName, tableName, alterTableDescProto.getParams());
         break;
       case UNSET_PROPERTY:
-        // TODO - not implemented yet
+        unsetProperties(databaseName, tableName, alterTableDescProto.getUnsetPropertyKeys());
         break;
       default:
         //TODO
@@ -780,6 +784,44 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         values.add(keyProto.getPartitionValue());
       }
       client.getHiveClient().dropPartition(databaseName, tableName, values, true);
+    } catch (Exception e) {
+      throw new TajoInternalError(e);
+    } finally {
+      if (client != null) {
+        client.release();
+      }
+    }
+  }
+
+  private void setProperties(final String databaseName, final String tableName,
+                             final PrimitiveProtos.KeyValueSetProto properties) {
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
+    try {
+      client = clientPool.getClient();
+      Table table = client.getHiveClient().getTable(databaseName, tableName);
+      table.getParameters().putAll(ProtoUtil.convertToMap(properties));
+	    client.getHiveClient().alter_table(databaseName, tableName, table);
+    } catch (NoSuchObjectException nsoe) {
+    } catch (Exception e) {
+      throw new TajoInternalError(e);
+    } finally {
+      if (client != null) {
+        client.release();
+      }
+    }
+  }
+
+  private void unsetProperties(final String databaseName, final String tableName,
+                               PrimitiveProtos.StringListProto propertyKeys) {
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
+    try {
+      client = clientPool.getClient();
+      Table table = client.getHiveClient().getTable(databaseName, tableName);
+	    for (String propertyKey : ProtoUtil.convertStrings(propertyKeys)) {
+		    table.getParameters().remove(propertyKey);
+	    }
+	    client.getHiveClient().alter_table(databaseName, tableName, table);
+    } catch (NoSuchObjectException nsoe) {
     } catch (Exception e) {
       throw new TajoInternalError(e);
     } finally {
