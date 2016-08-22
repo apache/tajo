@@ -93,4 +93,10 @@ public class TestMongoDBQueryTest extends QueryTestCaseBase {
     public void testInsert() throws Exception {
 //        runSimpleTests();
     }
+
+    @SimpleTest
+    @Test
+    public void testCTAS() throws Exception {
+        runSimpleTests();
+    }
 }
