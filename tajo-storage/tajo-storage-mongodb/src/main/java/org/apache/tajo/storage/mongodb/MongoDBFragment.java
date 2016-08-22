@@ -30,10 +30,10 @@ import java.net.URI;
 public class MongoDBFragment extends Fragment<Long> {
 
 
-    protected MongoDBFragment(URI uri,
-                              String inputSourceId,
-                              long startKey,
-                              long endKey) {
-        super("MONGODB", uri, inputSourceId, startKey, endKey, endKey - startKey, null);
-    }
+  protected MongoDBFragment(URI uri,
+                            String inputSourceId,
+                            long startKey,
+                            long endKey) {
+    super("MONGODB", uri, inputSourceId, startKey, endKey, endKey - startKey, null);
+  }
 }

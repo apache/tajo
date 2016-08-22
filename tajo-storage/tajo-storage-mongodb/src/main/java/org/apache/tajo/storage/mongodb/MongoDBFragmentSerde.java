@@ -30,28 +30,28 @@ import java.net.URI;
  */
 public class MongoDBFragmentSerde implements FragmentSerde<MongoDBFragment, MongoDBFragmentProto> {
 
-    @Override
-    public Builder newBuilder() {
-        return MongoDBFragmentProto.newBuilder();
-    }
+  @Override
+  public Builder newBuilder() {
+    return MongoDBFragmentProto.newBuilder();
+  }
 
-    @Override
-    public MongoDBFragmentProto serialize(MongoDBFragment fragment) {
-        return MongoDBFragmentProto.newBuilder()
-                .setUri(fragment.getUri().toASCIIString())
-                .setTableName(fragment.getInputSourceId())
-                .setStartKey(fragment.getStartKey())
-                .setEndKey(fragment.getEndKey())
-                .build();
-    }
+  @Override
+  public MongoDBFragmentProto serialize(MongoDBFragment fragment) {
+    return MongoDBFragmentProto.newBuilder()
+            .setUri(fragment.getUri().toASCIIString())
+            .setTableName(fragment.getInputSourceId())
+            .setStartKey(fragment.getStartKey())
+            .setEndKey(fragment.getEndKey())
+            .build();
+  }
 
-    @Override
-    public MongoDBFragment deserialize(MongoDBFragmentProto proto) {
-        return new MongoDBFragment(
-                URI.create(proto.getUri()),
-                proto.getTableName(),
-                proto.getStartKey(),
-                proto.getEndKey()
-        );
-    }
+  @Override
+  public MongoDBFragment deserialize(MongoDBFragmentProto proto) {
+    return new MongoDBFragment(
+            URI.create(proto.getUri()),
+            proto.getTableName(),
+            proto.getStartKey(),
+            proto.getEndKey()
+    );
+  }
 }

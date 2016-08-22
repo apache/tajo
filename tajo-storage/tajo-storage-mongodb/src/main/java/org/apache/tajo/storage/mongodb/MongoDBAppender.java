@@ -34,82 +34,82 @@ import java.util.List;
 
 public class MongoDBAppender implements Appender {
 
-    //Given at constructor
-    private final Configuration conf;
-    private final Schema schema;
-    private final TableMeta meta;
-    private final Path stagingDir;
-    private final TaskAttemptId taskAttemptId;
-    private final URI uri;
+  //Given at constructor
+  private final Configuration conf;
+  private final Schema schema;
+  private final TableMeta meta;
+  private final Path stagingDir;
+  private final TaskAttemptId taskAttemptId;
+  private final URI uri;
 
 
-    protected boolean inited = false;
-    private boolean[] columnStatsEnabled;
-    private boolean tableStatsEnabled;
+  protected boolean inited = false;
+  private boolean[] columnStatsEnabled;
+  private boolean tableStatsEnabled;
 
-    private MongoDBCollectionWriter mongoDBCollectionWriter;
+  private MongoDBCollectionWriter mongoDBCollectionWriter;
 
 
-    public MongoDBAppender(Configuration conf, TaskAttemptId taskAttemptId,
-                           Schema schema, TableMeta meta, Path stagingDir, URI uri) {
-        this.conf = conf;
-        this.schema = schema;
-        this.meta = meta;
-        this.stagingDir = stagingDir;
-        this.taskAttemptId = taskAttemptId;
-        this.uri = stagingDir.toUri();
+  public MongoDBAppender(Configuration conf, TaskAttemptId taskAttemptId,
+                         Schema schema, TableMeta meta, Path stagingDir, URI uri) {
+    this.conf = conf;
+    this.schema = schema;
+    this.meta = meta;
+    this.stagingDir = stagingDir;
+    this.taskAttemptId = taskAttemptId;
+    this.uri = stagingDir.toUri();
+  }
+
+  @Override
+  public void init() throws IOException {
+    if (inited) {
+      throw new IllegalStateException("FileAppender is already initialized.");
+    }
+    inited = true;
+    MongoDBDocumentSerializer md = new MongoDBDocumentSerializer(schema, meta);
+    mongoDBCollectionWriter = new MongoDBCollectionWriter(ConnectionInfo.fromURI(stagingDir.toString()), md);
+    mongoDBCollectionWriter.init();
+  }
+
+  @Override
+  public void addTuple(Tuple t) throws IOException {
+    mongoDBCollectionWriter.addTuple(t);
+  }
+
+  @Override
+  public void flush() throws IOException {
+    mongoDBCollectionWriter.write();
+  }
+
+  @Override
+  public long getEstimatedOutputSize() throws IOException {
+    throw new IOException(new NotImplementedException());
+  }
+
+  @Override
+  public void close() throws IOException {
+    mongoDBCollectionWriter.close();
+  }
+
+  @Override
+  public void enableStats() {
+    if (inited) {
+      throw new IllegalStateException("Should enable this option before init()");
     }
 
-    @Override
-    public void init() throws IOException {
-        if (inited) {
-            throw new IllegalStateException("FileAppender is already initialized.");
-        }
-        inited = true;
-        MongoDBDocumentSerializer md = new MongoDBDocumentSerializer(schema, meta);
-        mongoDBCollectionWriter = new MongoDBCollectionWriter(ConnectionInfo.fromURI(stagingDir.toString()), md);
-        mongoDBCollectionWriter.init();
-    }
+    this.tableStatsEnabled = true;
+    this.columnStatsEnabled = new boolean[schema.size()];
 
-    @Override
-    public void addTuple(Tuple t) throws IOException {
-        mongoDBCollectionWriter.addTuple(t);
-    }
+  }
 
-    @Override
-    public void flush() throws IOException {
-        mongoDBCollectionWriter.write();
-    }
+  @Override
+  public void enableStats(List<Column> columnList) {
 
-    @Override
-    public long getEstimatedOutputSize() throws IOException {
-        throw new IOException(new NotImplementedException());
-    }
+  }
 
-    @Override
-    public void close() throws IOException {
-        mongoDBCollectionWriter.close();
-    }
-
-    @Override
-    public void enableStats() {
-        if (inited) {
-            throw new IllegalStateException("Should enable this option before init()");
-        }
-
-        this.tableStatsEnabled = true;
-        this.columnStatsEnabled = new boolean[schema.size()];
-
-    }
-
-    @Override
-    public void enableStats(List<Column> columnList) {
-
-    }
-
-    @Override
-    public TableStats getStats() {
-        TableStats stats = new TableStats();
-        return stats;
-    }
+  @Override
+  public TableStats getStats() {
+    TableStats stats = new TableStats();
+    return stats;
+  }
 }

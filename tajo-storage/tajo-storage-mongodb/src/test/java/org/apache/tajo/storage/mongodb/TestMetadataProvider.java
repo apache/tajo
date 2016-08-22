@@ -31,65 +31,65 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class TestMetadataProvider {
-    static MongoDBTestServer server = MongoDBTestServer.getInstance();
+  static MongoDBTestServer server = MongoDBTestServer.getInstance();
 
 
-    @AfterClass
-    public static void tearDownClass() throws Exception {
-       // server.stop();
+  @AfterClass
+  public static void tearDownClass() throws Exception {
+    // server.stop();
+  }
+
+  @Test
+  public void testGetTablespaceName() throws Exception {
+    //check for Space Name validity
+    Tablespace tablespace = TablespaceManager.get(server.getURI());
+    MetadataProvider provider = tablespace.getMetadataProvider();
+    assertEquals(server.SPACE_NAME, provider.getTablespaceName());
+  }
+
+  @Test
+  public void testGetDatabaseName() throws Exception {
+    //
+    Tablespace tablespace = TablespaceManager.get(server.getURI());
+    MetadataProvider provider = tablespace.getMetadataProvider();
+    assertEquals(MongoDBTestServer.MAPPEDDBNAME, provider.getDatabaseName());
+  }
+
+
+  @Test
+  public void testGetSchemas() throws Exception {
+    Tablespace tablespace = TablespaceManager.get(server.getURI());
+    MetadataProvider provider = tablespace.getMetadataProvider();
+    assertTrue(provider.getSchemas().isEmpty());
+  }
+
+  @Test
+  public void testGetTables() throws Exception {
+    Tablespace tablespace = TablespaceManager.get(server.getURI());
+    MetadataProvider provider = tablespace.getMetadataProvider();
+
+    final Set<String> expected = Sets.newHashSet(server.collectionNames);
+    expected.add("system.indexes");
+    final Set<String> found = Sets.newHashSet(provider.getTables(null, null));
+
+    assertEquals(expected, found);
+  }
+
+  @Test
+  public void testGetTableDescription() throws Exception {
+    Tablespace tablespace = TablespaceManager.get(server.getURI());
+    MetadataProvider provider = tablespace.getMetadataProvider();
+
+    for (String tableName : server.collectionNames) {
+      TableDesc table = provider.getTableDesc(null, tableName);
+      assertEquals(server.MAPPEDDBNAME + "." + tableName, table.getName());
+      assertEquals(server.getURI() + "?table=" + tableName, table.getUri().toASCIIString());
+
+      //ToDo Check the stats
     }
 
-    @Test
-    public void testGetTablespaceName() throws Exception {
-        //check for Space Name validity
-        Tablespace tablespace = TablespaceManager.get(server.getURI());
-        MetadataProvider provider = tablespace.getMetadataProvider();
-        assertEquals(server.SPACE_NAME, provider.getTablespaceName());
-    }
 
-    @Test
-    public void testGetDatabaseName() throws Exception {
-        //
-        Tablespace tablespace = TablespaceManager.get(server.getURI());
-        MetadataProvider provider = tablespace.getMetadataProvider();
-        assertEquals(MongoDBTestServer.MAPPEDDBNAME, provider.getDatabaseName());
-    }
-
-
-    @Test
-    public void testGetSchemas() throws Exception {
-        Tablespace tablespace = TablespaceManager.get(server.getURI());
-        MetadataProvider provider = tablespace.getMetadataProvider();
-        assertTrue(provider.getSchemas().isEmpty());
-    }
-
-    @Test
-    public void testGetTables() throws Exception {
-        Tablespace tablespace = TablespaceManager.get(server.getURI());
-        MetadataProvider provider = tablespace.getMetadataProvider();
-
-        final Set<String> expected = Sets.newHashSet(server.collectionNames);
-        expected.add("system.indexes");
-        final Set<String> found = Sets.newHashSet(provider.getTables(null, null));
-
-        assertEquals(expected, found);
-    }
-
-    @Test
-    public void testGetTableDescription() throws Exception {
-        Tablespace tablespace = TablespaceManager.get(server.getURI());
-        MetadataProvider provider = tablespace.getMetadataProvider();
-
-        for (String tableName : server.collectionNames) {
-            TableDesc table = provider.getTableDesc(null, tableName);
-            assertEquals(server.MAPPEDDBNAME + "." + tableName, table.getName());
-            assertEquals(server.getURI() + "?table=" + tableName, table.getUri().toASCIIString());
-
-            //ToDo Check the stats
-        }
-
-
-    }
+  }
 
 
 }

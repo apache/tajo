@@ -33,55 +33,55 @@ import static org.junit.Assert.assertEquals;
 
 public class TestMongoDBDocumentSerializer {
 
-    @Test
-    public void testSeriaalizeTextType() throws IOException {
-        Schema schem = SchemaBuilder.builder().
-                add(new Column("title", TajoDataTypes.Type.TEXT))
-                .add(new Column("first_name", TajoDataTypes.Type.TEXT))
-                .add(new Column("last_name", TajoDataTypes.Type.TEXT))
-                .build();
+  @Test
+  public void testSeriaalizeTextType() throws IOException {
+    Schema schem = SchemaBuilder.builder().
+            add(new Column("title", TajoDataTypes.Type.TEXT))
+            .add(new Column("first_name", TajoDataTypes.Type.TEXT))
+            .add(new Column("last_name", TajoDataTypes.Type.TEXT))
+            .build();
 
-        MongoDBDocumentSerializer documentSerializer = new MongoDBDocumentSerializer(schem, null);
+    MongoDBDocumentSerializer documentSerializer = new MongoDBDocumentSerializer(schem, null);
 
-        Tuple tuple = new VTuple(3);
-        tuple.put(0, DatumFactory.createText("Kingslayer"));
-        tuple.put(1, DatumFactory.createText("Jaime"));
-        tuple.put(2, DatumFactory.createText("Lannister"));
-        Document md = new Document();
+    Tuple tuple = new VTuple(3);
+    tuple.put(0, DatumFactory.createText("Kingslayer"));
+    tuple.put(1, DatumFactory.createText("Jaime"));
+    tuple.put(2, DatumFactory.createText("Lannister"));
+    Document md = new Document();
 
-        documentSerializer.serialize(tuple, md);
+    documentSerializer.serialize(tuple, md);
 
-        assertEquals("Kingslayer", md.getString("title"));
-        assertEquals("Jaime", md.getString("first_name"));
-        assertEquals("Lannister", md.getString("last_name"));
+    assertEquals("Kingslayer", md.getString("title"));
+    assertEquals("Jaime", md.getString("first_name"));
+    assertEquals("Lannister", md.getString("last_name"));
 
-    }
+  }
 
-    @Test
-    public void testSerializeIntFloatBoolean() throws IOException {
-        Schema schem = SchemaBuilder.builder().
-                add(new Column("title", TajoDataTypes.Type.TEXT))
-                .add(new Column("age", TajoDataTypes.Type.INT4))
-                .add(new Column("height", TajoDataTypes.Type.FLOAT8))
-                .add(new Column("single", TajoDataTypes.Type.BOOLEAN))
-                .build();
+  @Test
+  public void testSerializeIntFloatBoolean() throws IOException {
+    Schema schem = SchemaBuilder.builder().
+            add(new Column("title", TajoDataTypes.Type.TEXT))
+            .add(new Column("age", TajoDataTypes.Type.INT4))
+            .add(new Column("height", TajoDataTypes.Type.FLOAT8))
+            .add(new Column("single", TajoDataTypes.Type.BOOLEAN))
+            .build();
 
-        MongoDBDocumentSerializer documentSerializer = new MongoDBDocumentSerializer(schem, null);
+    MongoDBDocumentSerializer documentSerializer = new MongoDBDocumentSerializer(schem, null);
 
-        Tuple tuple = new VTuple(4);
-        tuple.put(0, DatumFactory.createText("Mr"));
-        tuple.put(1, DatumFactory.createInt4(24));
-        tuple.put(2, DatumFactory.createFloat8(165.98));
-        tuple.put(3, DatumFactory.createBool(true));
-        Document md = new Document();
+    Tuple tuple = new VTuple(4);
+    tuple.put(0, DatumFactory.createText("Mr"));
+    tuple.put(1, DatumFactory.createInt4(24));
+    tuple.put(2, DatumFactory.createFloat8(165.98));
+    tuple.put(3, DatumFactory.createBool(true));
+    Document md = new Document();
 
-        documentSerializer.serialize(tuple, md);
+    documentSerializer.serialize(tuple, md);
 
-        assertEquals("Mr", md.get("title"));
-        assertEquals(24, md.get("age"));
-        assertEquals(165.98, md.get("height"));
-        assertEquals(true, md.get("single"));
+    assertEquals("Mr", md.get("title"));
+    assertEquals(24, md.get("age"));
+    assertEquals(165.98, md.get("height"));
+    assertEquals(true, md.get("single"));
 
-    }
+  }
 
 }

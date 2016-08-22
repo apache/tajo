@@ -34,131 +34,131 @@ MongoURI, db credentials and URI specific details such as schema, host, port
 
 public class ConnectionInfo {
 
-    private static final Log LOG = LogFactory.getLog(MongoDBTableSpace.class);
+  private static final Log LOG = LogFactory.getLog(MongoDBTableSpace.class);
 
-    private MongoClientURI mongoDBURI;
-    private String scheme;
-    private String host;
-    private String dbName;
-    private String tableName;
-    private String user;
-    private String password;
-    private int port;
-    private Map<String, String> params;
+  private MongoClientURI mongoDBURI;
+  private String scheme;
+  private String host;
+  private String dbName;
+  private String tableName;
+  private String user;
+  private String password;
+  private int port;
+  private Map<String, String> params;
 
-    //To create an instance using provided string of a URI
-    public static ConnectionInfo fromURI(String originalUri) {
-        return fromURI(URI.create(originalUri));
+  //To create an instance using provided string of a URI
+  public static ConnectionInfo fromURI(String originalUri) {
+    return fromURI(URI.create(originalUri));
+  }
+
+  //creates a instance using provided URI
+  public static ConnectionInfo fromURI(URI originalUri) {
+    final String uriStr = originalUri.toASCIIString();
+    URI uri = originalUri;
+
+    final ConnectionInfo connInfo = new ConnectionInfo();
+    connInfo.scheme = uriStr.substring(0, uriStr.indexOf("://"));
+
+    connInfo.host = uri.getHost();
+    connInfo.port = uri.getPort();
+
+    //Set the db name
+    String path = uri.getPath();
+    if (path != null && !path.isEmpty()) {
+      String[] pathElements = path.substring(1).split("/");
+      if (pathElements.length != 1) {
+        throw new TajoInternalError("Invalid JDBC path: " + path);
+      }
+      connInfo.dbName = pathElements[0];
     }
 
-    //creates a instance using provided URI
-    public static ConnectionInfo fromURI(URI originalUri) {
-        final String uriStr = originalUri.toASCIIString();
-        URI uri = originalUri;
+    //Convert parms into a Map
+    Map<String, String> params = new HashMap<>();
+    int paramIndex = uriStr.indexOf("?");
+    if (paramIndex > 0) {
+      String parameterPart = uriStr.substring(paramIndex + 1, uriStr.length());
 
-        final ConnectionInfo connInfo = new ConnectionInfo();
-        connInfo.scheme = uriStr.substring(0, uriStr.indexOf("://"));
+      String[] eachParam = parameterPart.split("&");
 
-        connInfo.host = uri.getHost();
-        connInfo.port = uri.getPort();
-
-        //Set the db name
-        String path = uri.getPath();
-        if (path != null && !path.isEmpty()) {
-            String[] pathElements = path.substring(1).split("/");
-            if (pathElements.length != 1) {
-                throw new TajoInternalError("Invalid JDBC path: " + path);
-            }
-            connInfo.dbName = pathElements[0];
+      for (String each : eachParam) {
+        String[] keyValues = each.split("=");
+        if (keyValues.length != 2) {
+          throw new TajoInternalError("Invalid URI Parameters: " + parameterPart);
         }
-
-        //Convert parms into a Map
-        Map<String, String> params = new HashMap<>();
-        int paramIndex = uriStr.indexOf("?");
-        if (paramIndex > 0) {
-            String parameterPart = uriStr.substring(paramIndex + 1, uriStr.length());
-
-            String[] eachParam = parameterPart.split("&");
-
-            for (String each : eachParam) {
-                String[] keyValues = each.split("=");
-                if (keyValues.length != 2) {
-                    throw new TajoInternalError("Invalid URI Parameters: " + parameterPart);
-                }
-                params.put(keyValues[0], keyValues[1]);
-            }
-        }
-
-        if (params.containsKey(MongoDBTableSpace.CONFIG_KEY_TABLE)) {
-            connInfo.tableName = params.remove(MongoDBTableSpace.CONFIG_KEY_TABLE);
-        }
-
-        if (params.containsKey(MongoDBTableSpace.CONFIG_KEY_USERNAME)) {
-            connInfo.user = params.remove(MongoDBTableSpace.CONFIG_KEY_USERNAME);
-        }
-        if (params.containsKey(MongoDBTableSpace.CONFIG_KEY_PASSWORD)) {
-            connInfo.password = params.remove(MongoDBTableSpace.CONFIG_KEY_PASSWORD);
-        }
-
-        connInfo.params = params;
-
-        String mongoDbURIStr = "";
-
-        //Generate the MongoURI
-        mongoDbURIStr += connInfo.getScheme();
-        mongoDbURIStr += "://";
-        if (connInfo.getUser() != null) {
-            mongoDbURIStr += connInfo.getUser();
-            if (connInfo.getPassword() != null)
-                mongoDbURIStr += ":" + connInfo.getPassword();
-            mongoDbURIStr += "@";
-        }
-        mongoDbURIStr += connInfo.getHost();
-        mongoDbURIStr += ":";
-        mongoDbURIStr += connInfo.getPort();
-        mongoDbURIStr += "/";
-        mongoDbURIStr += connInfo.getDbName();
-
-        LOG.info(mongoDbURIStr);
-        connInfo.mongoDBURI = new MongoClientURI(mongoDbURIStr);
-        return connInfo;
+        params.put(keyValues[0], keyValues[1]);
+      }
     }
 
-    public MongoClientURI getMongoDBURI() {
-        return mongoDBURI;
+    if (params.containsKey(MongoDBTableSpace.CONFIG_KEY_TABLE)) {
+      connInfo.tableName = params.remove(MongoDBTableSpace.CONFIG_KEY_TABLE);
     }
 
-    public String getScheme() {
-        return scheme;
+    if (params.containsKey(MongoDBTableSpace.CONFIG_KEY_USERNAME)) {
+      connInfo.user = params.remove(MongoDBTableSpace.CONFIG_KEY_USERNAME);
+    }
+    if (params.containsKey(MongoDBTableSpace.CONFIG_KEY_PASSWORD)) {
+      connInfo.password = params.remove(MongoDBTableSpace.CONFIG_KEY_PASSWORD);
     }
 
-    public String getHost() {
-        return host;
-    }
+    connInfo.params = params;
 
-    public String getDbName() {
-        return dbName;
-    }
+    String mongoDbURIStr = "";
 
-    public String getTableName() {
-        return tableName;
+    //Generate the MongoURI
+    mongoDbURIStr += connInfo.getScheme();
+    mongoDbURIStr += "://";
+    if (connInfo.getUser() != null) {
+      mongoDbURIStr += connInfo.getUser();
+      if (connInfo.getPassword() != null)
+        mongoDbURIStr += ":" + connInfo.getPassword();
+      mongoDbURIStr += "@";
     }
+    mongoDbURIStr += connInfo.getHost();
+    mongoDbURIStr += ":";
+    mongoDbURIStr += connInfo.getPort();
+    mongoDbURIStr += "/";
+    mongoDbURIStr += connInfo.getDbName();
 
-    public String getUser() {
-        return user;
-    }
+    LOG.info(mongoDbURIStr);
+    connInfo.mongoDBURI = new MongoClientURI(mongoDbURIStr);
+    return connInfo;
+  }
 
-    public String getPassword() {
-        return password;
-    }
+  public MongoClientURI getMongoDBURI() {
+    return mongoDBURI;
+  }
 
-    public int getPort() {
-        return port;
-    }
+  public String getScheme() {
+    return scheme;
+  }
 
-    public Map<String, String> getParams() {
-        return params;
-    }
+  public String getHost() {
+    return host;
+  }
+
+  public String getDbName() {
+    return dbName;
+  }
+
+  public String getTableName() {
+    return tableName;
+  }
+
+  public String getUser() {
+    return user;
+  }
+
+  public String getPassword() {
+    return password;
+  }
+
+  public int getPort() {
+    return port;
+  }
+
+  public Map<String, String> getParams() {
+    return params;
+  }
 }
 
 

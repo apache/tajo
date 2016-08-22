@@ -54,163 +54,163 @@ import java.util.Optional;
 
 public class MongoDBTableSpace extends Tablespace {
 
-    //Config Keys
-    public static final String CONFIG_KEY_MAPPED_DATABASE = "mapped_database";
-    public static final String CONFIG_KEY_CONN_PROPERTIES = "connection_properties";
-    public static final String CONFIG_KEY_USERNAME = "user";
-    public static final String CONFIG_KEY_PASSWORD = "password";
-    public static final String CONFIG_KEY_TABLE = "table";
-    //Table Space Properties
-    static final StorageProperty STORAGE_PROPERTY = new StorageProperty("rowstore", // type is to be defined
-            false,  //not movable
-            true,   //writable at the moment
-            true,   // Absolute path
-            true); // Meta data will  be provided
-    static final FormatProperty FORMAT_PROPERTY = new FormatProperty(
-            true, // Insert
-            true, //direct insert
-            true);// result staging
-    private static final Log LOG = LogFactory.getLog(MongoDBTableSpace.class);
-    protected MongoClient mongoClient;
-    protected MongoDatabase db;
-    protected String mappedDBName;
-    //Mongo Client object
-    private ConnectionInfo connectionInfo;
+  //Config Keys
+  public static final String CONFIG_KEY_MAPPED_DATABASE = "mapped_database";
+  public static final String CONFIG_KEY_CONN_PROPERTIES = "connection_properties";
+  public static final String CONFIG_KEY_USERNAME = "user";
+  public static final String CONFIG_KEY_PASSWORD = "password";
+  public static final String CONFIG_KEY_TABLE = "table";
+  //Table Space Properties
+  static final StorageProperty STORAGE_PROPERTY = new StorageProperty("rowstore", // type is to be defined
+          false,  //not movable
+          true,   //writable at the moment
+          true,   // Absolute path
+          true); // Meta data will  be provided
+  static final FormatProperty FORMAT_PROPERTY = new FormatProperty(
+          true, // Insert
+          true, //direct insert
+          true);// result staging
+  private static final Log LOG = LogFactory.getLog(MongoDBTableSpace.class);
+  protected MongoClient mongoClient;
+  protected MongoDatabase db;
+  protected String mappedDBName;
+  //Mongo Client object
+  private ConnectionInfo connectionInfo;
 
-    public MongoDBTableSpace(String name, URI uri, JSONObject config) {
+  public MongoDBTableSpace(String name, URI uri, JSONObject config) {
 
-        super(name, uri, config);
-        connectionInfo = ConnectionInfo.fromURI(uri);
+    super(name, uri, config);
+    connectionInfo = ConnectionInfo.fromURI(uri);
 
-        //set Connection Properties
-        if (config.containsKey(CONFIG_KEY_MAPPED_DATABASE)) {
-            mappedDBName = this.config.getAsString(CONFIG_KEY_MAPPED_DATABASE);
-        } else {
-            mappedDBName = getConnectionInfo().getDbName();
-        }
+    //set Connection Properties
+    if (config.containsKey(CONFIG_KEY_MAPPED_DATABASE)) {
+      mappedDBName = this.config.getAsString(CONFIG_KEY_MAPPED_DATABASE);
+    } else {
+      mappedDBName = getConnectionInfo().getDbName();
     }
+  }
 
-    @Override
-    protected void storageInit() throws IOException {
-        //Todo Extract User Details from Configuration
-        try {
-            connectionInfo = ConnectionInfo.fromURI(uri);
-            mongoClient = new MongoClient(getConnectionInfo().getMongoDBURI());
-            db = mongoClient.getDatabase(getConnectionInfo().getDbName());
-        } catch (Exception e) {
-            throw new TajoInternalError(e);
-        }
+  @Override
+  protected void storageInit() throws IOException {
+    //Todo Extract User Details from Configuration
+    try {
+      connectionInfo = ConnectionInfo.fromURI(uri);
+      mongoClient = new MongoClient(getConnectionInfo().getMongoDBURI());
+      db = mongoClient.getDatabase(getConnectionInfo().getDbName());
+    } catch (Exception e) {
+      throw new TajoInternalError(e);
     }
+  }
 
-    @Override
-    public long getTableVolume(TableDesc table, Optional<EvalNode> filter) {
+  @Override
+  public long getTableVolume(TableDesc table, Optional<EvalNode> filter) {
 
-        long count = 0;
-        try {
-            String[] nameSplited = IdentifierUtil.splitFQTableName(table.getName());
-            count = db.getCollection(nameSplited[1]).count();
-        } catch (Exception e) {
-            throw new TajoInternalError(e);
-        }
-        return count;
+    long count = 0;
+    try {
+      String[] nameSplited = IdentifierUtil.splitFQTableName(table.getName());
+      count = db.getCollection(nameSplited[1]).count();
+    } catch (Exception e) {
+      throw new TajoInternalError(e);
     }
+    return count;
+  }
 
 
-    @Override
-    public List<Fragment> getSplits(String inputSourceId, TableDesc tableDesc, boolean requireSort, @Nullable EvalNode filterCondition) throws IOException, TajoException {
-        long tableVolume = getTableVolume(tableDesc, Optional.empty());
-        MongoDBFragment mongoDBFragment = new MongoDBFragment(tableDesc.getUri(), inputSourceId, 0, tableVolume);
-        return Lists.newArrayList(mongoDBFragment);
-    }
+  @Override
+  public List<Fragment> getSplits(String inputSourceId, TableDesc tableDesc, boolean requireSort, @Nullable EvalNode filterCondition) throws IOException, TajoException {
+    long tableVolume = getTableVolume(tableDesc, Optional.empty());
+    MongoDBFragment mongoDBFragment = new MongoDBFragment(tableDesc.getUri(), inputSourceId, 0, tableVolume);
+    return Lists.newArrayList(mongoDBFragment);
+  }
 
 
-    @Override
-    public StorageProperty getProperty() {
-        return STORAGE_PROPERTY;
-    }
+  @Override
+  public StorageProperty getProperty() {
+    return STORAGE_PROPERTY;
+  }
 
-    @Override
-    public FormatProperty getFormatProperty(TableMeta meta) {
-        return FORMAT_PROPERTY;
-    }
+  @Override
+  public FormatProperty getFormatProperty(TableMeta meta) {
+    return FORMAT_PROPERTY;
+  }
 
-    @Override
-    public void close() {
+  @Override
+  public void close() {
 
-    }
+  }
 
-    @Override
-    public TupleRange[] getInsertSortRanges(OverridableConf queryContext, TableDesc tableDesc, Schema inputSchema, SortSpec[] sortSpecs, TupleRange dataRange) throws IOException {
-        return new TupleRange[0];
-    }
+  @Override
+  public TupleRange[] getInsertSortRanges(OverridableConf queryContext, TableDesc tableDesc, Schema inputSchema, SortSpec[] sortSpecs, TupleRange dataRange) throws IOException {
+    return new TupleRange[0];
+  }
 
-    @Override
-    public void verifySchemaToWrite(TableDesc tableDesc, Schema outSchema) throws TajoException {
+  @Override
+  public void verifySchemaToWrite(TableDesc tableDesc, Schema outSchema) throws TajoException {
 
-    }
+  }
 
-    @Override
-    public void createTable(TableDesc tableDesc, boolean ifNotExists) throws TajoException, IOException {
-        if (tableDesc == null)
-            throw new TajoRuntimeException(new NotImplementedException());
-        MongoCollection<Document> table = db.getCollection(tableDesc.getName());
+  @Override
+  public void createTable(TableDesc tableDesc, boolean ifNotExists) throws TajoException, IOException {
+    if (tableDesc == null)
+      throw new TajoRuntimeException(new NotImplementedException());
+    MongoCollection<Document> table = db.getCollection(tableDesc.getName());
 
-        //TODO Handle this here. If empty throw exception or what?
-        boolean ifExist = (table.count() > 0) ? true : false;
+    //TODO Handle this here. If empty throw exception or what?
+    boolean ifExist = (table.count() > 0) ? true : false;
 
-        //If meta  data provides. Create a table
-        if (STORAGE_PROPERTY.isMetadataProvided())
-            db.createCollection(IdentifierUtil.extractSimpleName(tableDesc.getName()));
-    }
+    //If meta  data provides. Create a table
+    if (STORAGE_PROPERTY.isMetadataProvided())
+      db.createCollection(IdentifierUtil.extractSimpleName(tableDesc.getName()));
+  }
 
-    @Override
-    public void purgeTable(TableDesc tableDesc) throws IOException, TajoException {
-        if (STORAGE_PROPERTY.isMetadataProvided())
-            db.getCollection(IdentifierUtil.extractSimpleName(tableDesc.getName())).drop();
-    }
+  @Override
+  public void purgeTable(TableDesc tableDesc) throws IOException, TajoException {
+    if (STORAGE_PROPERTY.isMetadataProvided())
+      db.getCollection(IdentifierUtil.extractSimpleName(tableDesc.getName())).drop();
+  }
 
-    @Override
-    public void prepareTable(LogicalNode node) throws IOException, TajoException {
-        return;
-    }
+  @Override
+  public void prepareTable(LogicalNode node) throws IOException, TajoException {
+    return;
+  }
 
-    @Override
-    public Path commitTable(OverridableConf queryContext, ExecutionBlockId finalEbId, LogicalPlan plan, Schema schema, TableDesc tableDesc) throws IOException {
-        return null;
-    }
+  @Override
+  public Path commitTable(OverridableConf queryContext, ExecutionBlockId finalEbId, LogicalPlan plan, Schema schema, TableDesc tableDesc) throws IOException {
+    return null;
+  }
 
-    @Override
-    public void rollbackTable(LogicalNode node) throws IOException, TajoException {
+  @Override
+  public void rollbackTable(LogicalNode node) throws IOException, TajoException {
 
-    }
+  }
 
-    @Override
-    public URI getStagingUri(OverridableConf context, String queryId, TableMeta meta) throws IOException {
-        return null;
-    }
+  @Override
+  public URI getStagingUri(OverridableConf context, String queryId, TableMeta meta) throws IOException {
+    return null;
+  }
 
-    @Override
-    public URI getRootUri() {
-        return uri;
-    }
+  @Override
+  public URI getRootUri() {
+    return uri;
+  }
 
-    @Override
-    public URI getTableUri(TableMeta meta, String databaseName, String tableName) {
-        //ToDo Find a better way this
-        String tableURI = "";
-        if (this.getUri().toASCIIString().contains("?"))
-            tableURI = this.getUri().toASCIIString() + "&" + CONFIG_KEY_TABLE + "=" + tableName;
-        else
-            tableURI = this.getUri().toASCIIString() + "?" + CONFIG_KEY_TABLE + "=" + tableName;
+  @Override
+  public URI getTableUri(TableMeta meta, String databaseName, String tableName) {
+    //ToDo Find a better way this
+    String tableURI = "";
+    if (this.getUri().toASCIIString().contains("?"))
+      tableURI = this.getUri().toASCIIString() + "&" + CONFIG_KEY_TABLE + "=" + tableName;
+    else
+      tableURI = this.getUri().toASCIIString() + "?" + CONFIG_KEY_TABLE + "=" + tableName;
 
-        return URI.create(tableURI);
-    }
+    return URI.create(tableURI);
+  }
 
-    //@Override
-    public URI getTableUri(String databaseName, String tableName) {
-        //ToDo set the TableURI properly
-        return URI.create(this.getUri() + "&" + CONFIG_KEY_TABLE + "=" + tableName);
-    }
+  //@Override
+  public URI getTableUri(String databaseName, String tableName) {
+    //ToDo set the TableURI properly
+    return URI.create(this.getUri() + "&" + CONFIG_KEY_TABLE + "=" + tableName);
+  }
 
 //    @Override
 //    public URI getTableUri(String databaseName, String tableName) {
@@ -219,22 +219,22 @@ public class MongoDBTableSpace extends Tablespace {
 //    }
 
 
-    // Metadata
-    public MetadataProvider getMetadataProvider() {
-        return new MongoDBMetadataProvider(this, mappedDBName);
-    }
+  // Metadata
+  public MetadataProvider getMetadataProvider() {
+    return new MongoDBMetadataProvider(this, mappedDBName);
+  }
 
-    public ConnectionInfo getConnectionInfo() {
-        return connectionInfo;
-    }
+  public ConnectionInfo getConnectionInfo() {
+    return connectionInfo;
+  }
 
 
-    //ToDo Make Sure this is not an issue
-    @Override
-    public Appender getAppender(OverridableConf queryContext,
-                                TaskAttemptId taskAttemptId, TableMeta meta, Schema schema, Path workDir)
+  //ToDo Make Sure this is not an issue
+  @Override
+  public Appender getAppender(OverridableConf queryContext,
+                              TaskAttemptId taskAttemptId, TableMeta meta, Schema schema, Path workDir)
 
-    {
-        return new MongoDBAppender(null, taskAttemptId, schema, meta, workDir, workDir.toUri());
-    }
+  {
+    return new MongoDBAppender(null, taskAttemptId, schema, meta, workDir, workDir.toUri());
+  }
 }

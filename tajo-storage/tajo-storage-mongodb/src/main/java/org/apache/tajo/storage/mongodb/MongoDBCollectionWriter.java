@@ -31,35 +31,35 @@ import java.util.List;
  * Writes tuples into a mongodb collection
  */
 public class MongoDBCollectionWriter {
-    MongoClient mongoClient;
-    MongoCollection<Document> collection;
-    MongoDBDocumentSerializer mongoDBDocumentSerializer;
-    private ConnectionInfo connectionInfo;
-    private List<Document> documentList = new ArrayList<>();
+  MongoClient mongoClient;
+  MongoCollection<Document> collection;
+  MongoDBDocumentSerializer mongoDBDocumentSerializer;
+  private ConnectionInfo connectionInfo;
+  private List<Document> documentList = new ArrayList<>();
 
-    public MongoDBCollectionWriter(ConnectionInfo connectionInfo, MongoDBDocumentSerializer serializer) {
-        this.connectionInfo = connectionInfo;
-        this.mongoDBDocumentSerializer = serializer;
-    }
+  public MongoDBCollectionWriter(ConnectionInfo connectionInfo, MongoDBDocumentSerializer serializer) {
+    this.connectionInfo = connectionInfo;
+    this.mongoDBDocumentSerializer = serializer;
+  }
 
-    public void init() {
-        mongoClient = new MongoClient(connectionInfo.getMongoDBURI());
-        MongoDatabase db = mongoClient.getDatabase(connectionInfo.getDbName());
-        collection = db.getCollection(connectionInfo.getTableName());
-    }
+  public void init() {
+    mongoClient = new MongoClient(connectionInfo.getMongoDBURI());
+    MongoDatabase db = mongoClient.getDatabase(connectionInfo.getDbName());
+    collection = db.getCollection(connectionInfo.getTableName());
+  }
 
-    public void addTuple(Tuple tuple) throws IOException {
-        Document dc = new Document();
-        mongoDBDocumentSerializer.serialize(tuple, dc);
-        documentList.add(dc);
-    }
+  public void addTuple(Tuple tuple) throws IOException {
+    Document dc = new Document();
+    mongoDBDocumentSerializer.serialize(tuple, dc);
+    documentList.add(dc);
+  }
 
-    public void write() {
-        collection.insertMany(documentList);
-    }
+  public void write() {
+    collection.insertMany(documentList);
+  }
 
-    public void close() {
-        mongoClient.close();
-    }
+  public void close() {
+    mongoClient.close();
+  }
 
 }

@@ -23,34 +23,34 @@ import static org.junit.Assert.assertEquals;
 
 public class TestConnectionInfo {
 
-    @Test
-    public final void testGetConnectionInfoType1() {
+  @Test
+  public final void testGetConnectionInfoType1() {
 
-        ConnectionInfo connInfo = ConnectionInfo.fromURI("mongodb://localhost:1336/db1?table=tb1&user=testuser&password=testpass");
+    ConnectionInfo connInfo = ConnectionInfo.fromURI("mongodb://localhost:1336/db1?table=tb1&user=testuser&password=testpass");
 
-        assertEquals(connInfo.getMongoDBURI().getURI(), "mongodb://testuser:testpass@localhost:1336/db1");
-        assertEquals(connInfo.getScheme(), "mongodb");
-        assertEquals(connInfo.getHost(), "localhost");
-        assertEquals(connInfo.getPort(), 1336);
-        assertEquals(connInfo.getDbName(), "db1");
-        assertEquals(connInfo.getUser(), "testuser");
-        assertEquals(connInfo.getPassword(), "testpass");
-        assertEquals(connInfo.getTableName(), "tb1");
-    }
+    assertEquals(connInfo.getMongoDBURI().getURI(), "mongodb://testuser:testpass@localhost:1336/db1");
+    assertEquals(connInfo.getScheme(), "mongodb");
+    assertEquals(connInfo.getHost(), "localhost");
+    assertEquals(connInfo.getPort(), 1336);
+    assertEquals(connInfo.getDbName(), "db1");
+    assertEquals(connInfo.getUser(), "testuser");
+    assertEquals(connInfo.getPassword(), "testpass");
+    assertEquals(connInfo.getTableName(), "tb1");
+  }
 
-    @Test
-    public final void testGetConnectionInfoType2() {
-        //Create a connection info object
-        ConnectionInfo connInfo = ConnectionInfo.fromURI("mongodb://localhost:1336/db1?table=tb1&user=testuser&password=testpass&TZ=GMT+9");
+  @Test
+  public final void testGetConnectionInfoType2() {
+    //Create a connection info object
+    ConnectionInfo connInfo = ConnectionInfo.fromURI("mongodb://localhost:1336/db1?table=tb1&user=testuser&password=testpass&TZ=GMT+9");
 
-        assertEquals(connInfo.getScheme(), "mongodb");
-        assertEquals(connInfo.getHost(), "localhost");
-        assertEquals(connInfo.getPort(), 1336);
-        assertEquals(connInfo.getDbName(), "db1");
-        assertEquals(connInfo.getUser(), "testuser");
-        assertEquals(connInfo.getPassword(), "testpass");
-        assertEquals(connInfo.getTableName(), "tb1");
-        assertEquals(1, connInfo.getParams().size());
-        assertEquals("GMT+9", connInfo.getParams().get("TZ"));
-    }
+    assertEquals(connInfo.getScheme(), "mongodb");
+    assertEquals(connInfo.getHost(), "localhost");
+    assertEquals(connInfo.getPort(), 1336);
+    assertEquals(connInfo.getDbName(), "db1");
+    assertEquals(connInfo.getUser(), "testuser");
+    assertEquals(connInfo.getPassword(), "testpass");
+    assertEquals(connInfo.getTableName(), "tb1");
+    assertEquals(1, connInfo.getParams().size());
+    assertEquals("GMT+9", connInfo.getParams().get("TZ"));
+  }
 }

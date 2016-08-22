@@ -36,46 +36,46 @@ import java.util.List;
     Used within the MongoScanner to read tuples.
  */
 public class MongoDBCollectionReader {
-    private final CharsetEncoder encoder = CharsetUtil.getEncoder(CharsetUtil.UTF_8);
-    List<Document> documentList;
-    private ConnectionInfo connectionInfo;
-    private MongoDBDocumentDeserializer deserializer;
-    private int targetLength;
-    private int currentIndex;
+  private final CharsetEncoder encoder = CharsetUtil.getEncoder(CharsetUtil.UTF_8);
+  List<Document> documentList;
+  private ConnectionInfo connectionInfo;
+  private MongoDBDocumentDeserializer deserializer;
+  private int targetLength;
+  private int currentIndex;
 
 
-    public MongoDBCollectionReader(ConnectionInfo connectionInfo, MongoDBDocumentDeserializer deserializer, int targetLength) {
-        this.connectionInfo = connectionInfo;
-        this.deserializer = deserializer;
-        this.targetLength = targetLength;
-    }
+  public MongoDBCollectionReader(ConnectionInfo connectionInfo, MongoDBDocumentDeserializer deserializer, int targetLength) {
+    this.connectionInfo = connectionInfo;
+    this.deserializer = deserializer;
+    this.targetLength = targetLength;
+  }
 
-    public void init() throws IOException {
-        currentIndex = 0;
-        MongoClient mongoClient = new MongoClient(connectionInfo.getMongoDBURI());
-        MongoDatabase db = mongoClient.getDatabase(connectionInfo.getDbName());
+  public void init() throws IOException {
+    currentIndex = 0;
+    MongoClient mongoClient = new MongoClient(connectionInfo.getMongoDBURI());
+    MongoDatabase db = mongoClient.getDatabase(connectionInfo.getDbName());
 
-        MongoCollection<Document> collection = db.getCollection(connectionInfo.getTableName());
-        documentList = (List<Document>) collection.find().into(
-                new ArrayList<Document>());
-        ;
+    MongoCollection<Document> collection = db.getCollection(connectionInfo.getTableName());
+    documentList = (List<Document>) collection.find().into(
+            new ArrayList<Document>());
+    ;
 
-        deserializer.init();
-    }
+    deserializer.init();
+  }
 
-    public Tuple readTuple() throws IOException, TextLineParsingError {
-        if (currentIndex >= documentList.size()) return null;
+  public Tuple readTuple() throws IOException, TextLineParsingError {
+    if (currentIndex >= documentList.size()) return null;
 
-        Tuple outTuple = new VTuple(targetLength);
+    Tuple outTuple = new VTuple(targetLength);
 
-        deserializer.deserialize(documentList.get(currentIndex), outTuple);
-        currentIndex++;
-        return outTuple;
+    deserializer.deserialize(documentList.get(currentIndex), outTuple);
+    currentIndex++;
+    return outTuple;
 
-    }
+  }
 
-    public float getProgress() {
-        return ((float) currentIndex) / documentList.size();
-    }
+  public float getProgress() {
+    return ((float) currentIndex) / documentList.size();
+  }
 
 }

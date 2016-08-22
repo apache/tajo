@@ -34,69 +34,69 @@ import java.util.Map;
  */
 public class MongoDBDocumentSerializer {
 
-    private final Schema schema;
-    private final TableMeta meta;
-    private final Map<String, Type> types;
-    String[] paths;
+  private final Schema schema;
+  private final TableMeta meta;
+  private final Map<String, Type> types;
+  String[] paths;
 
-    public MongoDBDocumentSerializer(Schema schema, TableMeta meta) {
-        this.schema = schema;
-        this.meta = meta;
+  public MongoDBDocumentSerializer(Schema schema, TableMeta meta) {
+    this.schema = schema;
+    this.meta = meta;
 
-        paths = SchemaUtil.convertColumnsToPaths(Lists.newArrayList(schema.getAllColumns()), true);
-        types = SchemaUtil.buildTypeMap(schema.getAllColumns(), paths);
+    paths = SchemaUtil.convertColumnsToPaths(Lists.newArrayList(schema.getAllColumns()), true);
+    types = SchemaUtil.buildTypeMap(schema.getAllColumns(), paths);
+  }
+
+  public void setValue(Tuple inputTuple, String fullPath, String[] paths, int depth, int index, Document outputDoc) {
+
+
+    String simpleColumnName = paths[depth];
+    switch (types.get(fullPath)) {
+      case INT1:
+      case UINT1:
+      case INT2:
+      case UINT2:
+        outputDoc.put(simpleColumnName, inputTuple.getInt2(index));
+        break;
+
+      case INT4:
+      case UINT4:
+        outputDoc.put(simpleColumnName, inputTuple.getInt4(index));
+        break;
+
+      case INT8:
+      case UINT8:
+        outputDoc.put(simpleColumnName, inputTuple.getInt8(index));
+        break;
+
+      case FLOAT4:
+        outputDoc.put(simpleColumnName, inputTuple.getFloat4(index));
+        break;
+
+      case FLOAT8:
+        outputDoc.put(simpleColumnName, inputTuple.getFloat8(index));
+        break;
+
+      case CHAR:
+        outputDoc.put(simpleColumnName, inputTuple.getChar(index));
+        break;
+
+      case BOOLEAN:
+        outputDoc.put(simpleColumnName, inputTuple.getBool(index));
+        break;
+
+      default:
+        outputDoc.put(simpleColumnName, inputTuple.getText(index));
+        break;
     }
+  }
 
-    public void setValue(Tuple inputTuple, String fullPath, String[] paths, int depth, int index, Document outputDoc) {
 
-
-        String simpleColumnName = paths[depth];
-        switch (types.get(fullPath)) {
-            case INT1:
-            case UINT1:
-            case INT2:
-            case UINT2:
-                outputDoc.put(simpleColumnName, inputTuple.getInt2(index));
-                break;
-
-            case INT4:
-            case UINT4:
-                outputDoc.put(simpleColumnName, inputTuple.getInt4(index));
-                break;
-
-            case INT8:
-            case UINT8:
-                outputDoc.put(simpleColumnName, inputTuple.getInt8(index));
-                break;
-
-            case FLOAT4:
-                outputDoc.put(simpleColumnName, inputTuple.getFloat4(index));
-                break;
-
-            case FLOAT8:
-                outputDoc.put(simpleColumnName, inputTuple.getFloat8(index));
-                break;
-
-            case CHAR:
-                outputDoc.put(simpleColumnName, inputTuple.getChar(index));
-                break;
-
-            case BOOLEAN:
-                outputDoc.put(simpleColumnName, inputTuple.getBool(index));
-                break;
-
-            default:
-                outputDoc.put(simpleColumnName, inputTuple.getText(index));
-                break;
-        }
+  public void serialize(Tuple inputTuple, Document outputDoc) throws IOException {
+    for (int i = 0; i < inputTuple.size(); i++) {
+      String[] newPaths = paths[i].split(NestedPathUtil.PATH_DELIMITER);
+      setValue(inputTuple, newPaths[0], newPaths, 0, i, outputDoc);
     }
-
-
-    public void serialize(Tuple inputTuple, Document outputDoc) throws IOException {
-        for (int i = 0; i < inputTuple.size(); i++) {
-            String[] newPaths = paths[i].split(NestedPathUtil.PATH_DELIMITER);
-            setValue(inputTuple, newPaths[0], newPaths, 0, i, outputDoc);
-        }
-    }
+  }
 
 }

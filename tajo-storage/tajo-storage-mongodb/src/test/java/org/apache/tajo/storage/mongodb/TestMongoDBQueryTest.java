@@ -25,78 +25,78 @@ import java.net.URI;
 
 public class TestMongoDBQueryTest extends QueryTestCaseBase {
 
-    static MongoDBTestServer server = MongoDBTestServer.getInstance();
-    static URI uri = server.getURI();
+  static MongoDBTestServer server = MongoDBTestServer.getInstance();
+  static URI uri = server.getURI();
 
-    public TestMongoDBQueryTest() {
-        super(server.MAPPEDDBNAME);
+  public TestMongoDBQueryTest() {
+    super(server.MAPPEDDBNAME);
+  }
+
+  @BeforeClass
+  public static void setup() throws Exception {
+    QueryTestCaseBase.testingCluster.getMaster().refresh();
+    //  TablespaceManager.addTableSpaceForTest(new ExampleHttpFileTablespace("http_example", uri, configElements));
+
+  }
+
+  @AfterClass
+  public static void tearDownClass() throws Exception {
+    //   server.stop();
+  }
+
+  @Before
+  public void prepareTables() throws TajoException {
+    if (!MongoDBTableSpace.STORAGE_PROPERTY.isMetadataProvided()) {
+      executeString("create table got (title,first_name,last_name) tablespace test_spacename using mongodb");
+      executeString("create table github (*) tablespace test_spacename using mongodb");
+      //   executeString("create table github (*) tablespace test_spacename using ex_http_json with ('path'='github.json')");
     }
+  }
 
-    @BeforeClass
-    public static void setup() throws Exception {
-        QueryTestCaseBase.testingCluster.getMaster().refresh();
-        //  TablespaceManager.addTableSpaceForTest(new ExampleHttpFileTablespace("http_example", uri, configElements));
-
+  @After
+  public void dropTables() throws TajoException {
+    if (!MongoDBTableSpace.STORAGE_PROPERTY.isMetadataProvided()) {
+      executeString("drop table got");
+      executeString("drop table github");
     }
-
-    @AfterClass
-    public static void tearDownClass() throws Exception {
-     //   server.stop();
-    }
-
-    @Before
-    public void prepareTables() throws TajoException {
-        if (!MongoDBTableSpace.STORAGE_PROPERTY.isMetadataProvided()) {
-            executeString("create table got (title,first_name,last_name) tablespace test_spacename using mongodb");
-            executeString("create table github (*) tablespace test_spacename using mongodb");
-            //   executeString("create table github (*) tablespace test_spacename using ex_http_json with ('path'='github.json')");
-        }
-    }
-
-    @After
-    public void dropTables() throws TajoException {
-        if (!MongoDBTableSpace.STORAGE_PROPERTY.isMetadataProvided()) {
-            executeString("drop table got");
-            executeString("drop table github");
-        }
-    }
+  }
 
 
-    @SimpleTest
-    @Test
-    public void testSelect() throws Exception {
-        runSimpleTests();
-    }
+  @SimpleTest
+  @Test
+  public void testSelect() throws Exception {
+    runSimpleTests();
+  }
 
 
-    @SimpleTest
-    @Test
-    public void testSort() throws Exception {
-        runSimpleTests();
-    }
+  @SimpleTest
+  @Test
+  public void testSort() throws Exception {
+    runSimpleTests();
+  }
 
-    @SimpleTest
-    @Test
-    public void testGroupby() throws Exception {
-        runSimpleTests();
-    }
+  @SimpleTest
+  @Test
+  public void testGroupby() throws Exception {
+    runSimpleTests();
+  }
 
-    @SimpleTest
-    @Test
-    public void testJoin() throws Exception {
-        runSimpleTests();
-    }
+  @SimpleTest
+  @Test
+  public void testJoin() throws Exception {
+    runSimpleTests();
+  }
 
 
-    @SimpleTest
-    @Test
-    public void testInsert() throws Exception {
+  @SimpleTest
+  @Test
+  public void testInsert() throws Exception {
 //        runSimpleTests();
-    }
+  }
 
-    @SimpleTest
-    @Test
-    public void testCTAS() throws Exception {
-        runSimpleTests();
-    }
+  @SimpleTest
+  @Test
+  public void testCTAS() throws Exception {
+    runSimpleTests();
+  }
 }
