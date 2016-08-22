@@ -22,6 +22,7 @@ import org.apache.tajo.catalog.MetadataProvider;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
+import org.junit.AfterClass;
 import org.junit.Test;
 
 import java.util.Set;
@@ -31,6 +32,12 @@ import static org.junit.Assert.assertTrue;
 
 public class TestMetadataProvider {
     static MongoDBTestServer server = MongoDBTestServer.getInstance();
+
+
+    @AfterClass
+    public static void tearDownClass() throws Exception {
+       // server.stop();
+    }
 
     @Test
     public void testGetTablespaceName() throws Exception {

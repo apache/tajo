@@ -27,6 +27,7 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.*;
 import org.bson.Document;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -63,6 +64,11 @@ public class TestMongoDBAppender {
 
         appender.init();
 
+    }
+
+    @AfterClass
+    public static void tearDownClass() throws Exception {
+       // server.stop();
     }
 
     @Test

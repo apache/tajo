@@ -41,7 +41,7 @@ public class TestMongoDBQueryTest extends QueryTestCaseBase {
 
     @AfterClass
     public static void tearDownClass() throws Exception {
-        server.stop();
+     //   server.stop();
     }
 
     @Before

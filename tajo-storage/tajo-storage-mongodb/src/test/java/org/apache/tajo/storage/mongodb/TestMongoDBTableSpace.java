@@ -27,6 +27,7 @@ import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
+import org.junit.AfterClass;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -43,6 +44,12 @@ public class TestMongoDBTableSpace {
     //mongodb://<dbuser>:<dbpassword>@ds017231.mlab.com:17231/tajo_test
     static MongoDBTestServer server = MongoDBTestServer.getInstance();
     static URI uri = server.getURI();
+
+
+    @AfterClass
+    public static void tearDownClass() throws Exception {
+      //  server.stop();
+    }
 
     @Test
     public void testTablespaceHandler() {
