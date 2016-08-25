@@ -256,7 +256,7 @@
         <!--Mongo Java Driver-->
         <dependency>
             <groupId>org.mongodb</groupId>
-            <artifactId>mongodb-driver</artifactId>
+            <artifactId>mongo-java-driver</artifactId>
             <version>3.3.0</version>
         </dependency>
         <!--For testing server-->
