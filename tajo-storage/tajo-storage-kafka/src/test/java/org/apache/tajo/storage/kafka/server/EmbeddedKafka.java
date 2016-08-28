@@ -95,16 +95,8 @@ public class EmbeddedKafka implements Closeable {
     }
   }
 
-  public int getZookeeperPort() {
-    return zookeeper.getPort();
-  }
-
-  public int getPort() {
-    return port;
-  }
-
   public String getConnectString() {
-    return "localhost:" + Integer.toString(port);
+    return kafka.serverConfig().hostName() + ":" + kafka.serverConfig().port();
   }
 
   public String getZookeeperConnectString() {

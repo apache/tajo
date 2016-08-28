@@ -20,20 +20,20 @@ package org.apache.tajo.storage.kafka.server;
 
 import static io.airlift.testing.FileUtils.deleteRecursively;
 
+import org.apache.tajo.util.NetUtils;
+import org.apache.zookeeper.server.NIOServerCnxnFactory;
+import org.apache.zookeeper.server.ZooKeeperServer;
+import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.zookeeper.server.NIOServerCnxnFactory;
-import org.apache.zookeeper.server.ZooKeeperServer;
-import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
-
 import com.google.common.io.Files;
 
 public class EmbeddedZookeeper implements Closeable {
-  private final int port;
   private final File zkDataDir;
   private final ZooKeeperServer zkServer;
   private final NIOServerCnxnFactory cnxnFactory;
@@ -45,7 +45,6 @@ public class EmbeddedZookeeper implements Closeable {
   }
 
   public EmbeddedZookeeper(int port) throws IOException {
-    this.port = port;
     zkDataDir = Files.createTempDir();
     zkServer = new ZooKeeperServer();
 
@@ -80,10 +79,6 @@ public class EmbeddedZookeeper implements Closeable {
   }
 
   public String getConnectString() {
-    return "127.0.0.1:" + Integer.toString(port);
-  }
-
-  public int getPort() {
-    return port;
+    return NetUtils.normalizeInetSocketAddress(cnxnFactory.getLocalAddress());
   }
 }
