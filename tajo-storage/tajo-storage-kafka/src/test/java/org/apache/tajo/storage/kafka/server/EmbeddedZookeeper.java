@@ -39,7 +39,6 @@ public class EmbeddedZookeeper implements Closeable {
   private final NIOServerCnxnFactory cnxnFactory;
 
   private final AtomicBoolean started = new AtomicBoolean();
-  private final AtomicBoolean stopped = new AtomicBoolean();
 
   public EmbeddedZookeeper() throws IOException {
     this(2181);
@@ -65,7 +64,7 @@ public class EmbeddedZookeeper implements Closeable {
 
   @Override
   public void close() {
-    if (started.get() && !stopped.getAndSet(true)) {
+    if (started.get()) {
       cnxnFactory.shutdown();
       try {
         cnxnFactory.join();
