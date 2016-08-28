@@ -138,7 +138,7 @@
                       run cp -r ${basedir}/tajo-storage-hdfs/target/tajo-storage-hdfs-${project.version}*.jar .
                       run cp -r ${basedir}/tajo-storage-hbase/target/tajo-storage-hbase-${project.version}*.jar .
                       run cp -r ${basedir}/tajo-storage-s3/target/tajo-storage-s3-${project.version}*.jar .
-                      run cp -r ${basedir}/tajo-storage-s3/target/tajo-storage-kafka-${project.version}*.jar .
+                      run cp -r ${basedir}/tajo-storage-kafka/target/tajo-storage-kafka-${project.version}*.jar .
 
                       echo
                       echo "Tajo Storage dist layout available at: ${project.build.directory}/tajo-storage-${project.version}"
