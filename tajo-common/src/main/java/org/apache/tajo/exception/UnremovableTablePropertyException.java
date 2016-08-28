@@ -27,7 +27,7 @@ public class UnremovableTablePropertyException extends TajoException {
     super(e);
   }
 
-  public UnremovableTablePropertyException(String...keys) {
+  public UnremovableTablePropertyException(String... keys) {
     super(ResultCode.UNREMOVABLE_TABLE_PROPERTY, ErrorMessages.concat(keys));
   }
 }

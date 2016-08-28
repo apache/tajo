@@ -1120,12 +1120,12 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     Connection conn;
     PreparedStatement pstmt = null;
 
-	  Set<String> keys = Sets.newHashSet(propertyKeys.getValuesList());
-	  Set<String> violations = Sets.intersection(keys, unremovablePropertySet);
+    Set<String> keys = Sets.newHashSet(propertyKeys.getValuesList());
+    Set<String> violations = Sets.intersection(keys, unremovablePropertySet);
 
-	  if (!violations.isEmpty()) {
-			throw new UnremovableTablePropertyException(violations.toArray(new String[0]));
-	  }
+    if (!violations.isEmpty()) {
+      throw new UnremovableTablePropertyException(violations.toArray(new String[0]));
+    }
 
     Map<String, String> oldProperties = getTableOptions(tableId);
 
