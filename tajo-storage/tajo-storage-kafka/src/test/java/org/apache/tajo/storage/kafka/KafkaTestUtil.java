@@ -23,7 +23,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 
 import java.util.Collection;
 
-public class TestConstants {
+public class KafkaTestUtil {
   private static final String[] TEST_DATA = { "1|abc|0.2", "2|def|0.4", "3|ghi|0.6", "4|jkl|0.8", "5|mno|1.0" };
 
   static final String TOPIC_NAME = "test_topic";
