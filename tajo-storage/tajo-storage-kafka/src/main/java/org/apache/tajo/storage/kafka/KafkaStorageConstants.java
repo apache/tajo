@@ -16,21 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.tajo;
+package org.apache.tajo.storage.kafka;
 
-public class BuiltinStorages {
-  public static final String TEXT = "TEXT";
-  public static final String JSON = "JSON";
-  public static final String RAW = "RAW";
-  public static final String DRAW = "DRAW";
-  public static final String RCFILE = "RCFILE";
-  public static final String ROW = "ROW";
-  public static final String PARQUET = "PARQUET";
-  public static final String ORC = "ORC";
-  public static final String SEQUENCE_FILE = "SEQUENCEFILE";
-  public static final String AVRO = "AVRO";
-  public static final String HBASE = "HBASE";
-  public static final String SYSTEM = "SYSTEM";
-  public static final String EX_HTTP_JSON = "EX_HTTP_JSON";
-  public static final String KAFKA = "KAFKA";
+import org.apache.tajo.storage.StorageConstants;
+
+public class KafkaStorageConstants extends StorageConstants {
+  public static final String KAFKA_TOPIC = "kafka.topic";
+  public static final String KAFKA_TOPIC_PARTITION = "kafka.topic.partition";
+  public static final String KAFKA_FRAGMENT_SIZE = "kafka.fragment.size";
+  public static final String KAFKA_POLL_TIMEOUT = "kafka.poll.timeout";
+
+  public static final String DEFAULT_PARTITION = "all";
+  public static final String DEFAULT_FRAGMENT_SIZE = "100000";
+  public static final String DEFAULT_POLL_TIMEOUT = "30000";
 }

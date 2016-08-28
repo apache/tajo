@@ -16,21 +16,22 @@
  * limitations under the License.
  */
 
-package org.apache.tajo;
+option java_package = "org.apache.tajo.storage.kafka";
+option java_outer_classname = "StorageFragmentProtos";
+option optimize_for = SPEED;
+option java_generic_services = false;
+option java_generate_equals_and_hash = true;
 
-public class BuiltinStorages {
-  public static final String TEXT = "TEXT";
-  public static final String JSON = "JSON";
-  public static final String RAW = "RAW";
-  public static final String DRAW = "DRAW";
-  public static final String RCFILE = "RCFILE";
-  public static final String ROW = "ROW";
-  public static final String PARQUET = "PARQUET";
-  public static final String ORC = "ORC";
-  public static final String SEQUENCE_FILE = "SEQUENCEFILE";
-  public static final String AVRO = "AVRO";
-  public static final String HBASE = "HBASE";
-  public static final String SYSTEM = "SYSTEM";
-  public static final String EX_HTTP_JSON = "EX_HTTP_JSON";
-  public static final String KAFKA = "KAFKA";
+import "CatalogProtos.proto";
+
+message KafkaFragmentProto {
+  required string uri = 1;
+  required string tableName = 2;
+  required string topicName = 3;
+  required int64 startOffset = 4;
+  required int64 lastOffset = 5;
+  required int32 partitionId = 6;
+  required bool last = 7;
+  required int64 length = 8;
+  optional string leaderHost = 9;
 }
