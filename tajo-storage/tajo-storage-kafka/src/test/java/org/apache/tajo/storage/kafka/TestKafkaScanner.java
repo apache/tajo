@@ -18,7 +18,7 @@
 
 package org.apache.tajo.storage.kafka;
 
-import static org.apache.tajo.storage.kafka.TestConstants.TOPIC_NAME;
+import static org.apache.tajo.storage.kafka.KafkaTestUtil.TOPIC_NAME;
 import static org.junit.Assert.assertTrue;
 
 import org.apache.kafka.clients.producer.Producer;
@@ -64,7 +64,7 @@ public class TestKafkaScanner {
 
     // Load test data.
     try (Producer<String, String> producer = KAFKA.createProducer(KAFKA.getConnectString())) {
-      TestConstants.sendTestData(producer, TOPIC_NAME);
+      KafkaTestUtil.sendTestData(producer, TOPIC_NAME);
     }
   }
 
