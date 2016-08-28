@@ -61,7 +61,7 @@ public class SimpleConsumerManager implements Closeable {
    * @param fragmentSize max polling size of kafka
    */
   public SimpleConsumerManager(URI uri, String topic, int partitionId, int fragmentSize) {
-    String clientId = SimpleConsumerManager.getIdentifier("TCons");
+    String clientId = SimpleConsumerManager.createIdentifier("TCons");
     Properties props = getDefaultProperties(uri, clientId, fragmentSize);
 
     partition = new TopicPartition(topic, partitionId);
@@ -128,7 +128,7 @@ public class SimpleConsumerManager implements Closeable {
    * @throws IOException
    */
   static List<PartitionInfo> getPartitions(URI uri, String topic) throws IOException {
-    String clientId = SimpleConsumerManager.getIdentifier("TPart");
+    String clientId = SimpleConsumerManager.createIdentifier("TPart");
     Properties props = getDefaultProperties(uri, clientId, Integer.MAX_VALUE);
     try (KafkaConsumer<String, String> consumer = new KafkaConsumer<String, String>(props)) {
       return consumer.partitionsFor(topic);
@@ -181,7 +181,7 @@ public class SimpleConsumerManager implements Closeable {
    * @param prefix
    * @return
    */
-  private static String getIdentifier(String prefix) {
+  private static String createIdentifier(String prefix) {
     Random r = new Random();
     return prefix + "_" + r.nextInt(1000000) + "_" + System.currentTimeMillis();
   }

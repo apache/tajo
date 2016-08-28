@@ -44,7 +44,6 @@ import org.apache.tajo.storage.text.TextLineParsingError;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -73,7 +72,7 @@ public class KafkaScanner implements Scanner {
   private KafkaFragment fragment;
   private Column[] targets;
   private TextLineDeserializer deserializer;
-  private AtomicBoolean finished = new AtomicBoolean(false);
+  private boolean finished;
 
   private float progress = 0.0f;
 
@@ -120,14 +119,14 @@ public class KafkaScanner implements Scanner {
 
   @Override
   public Tuple next() throws IOException {
-    if (finished.get()) {
+    if (finished) {
       return null;
     }
 
     if (records == null || readRecordIndex >= records.size()) {
       records = readMessage();
       if (records.isEmpty()) {
-        finished.set(true);
+        finished = true;
         progress = 1.0f;
         return null;
       }
@@ -198,7 +197,7 @@ public class KafkaScanner implements Scanner {
     progress = 0.0f;
     readRecordIndex = -1;
     records = null;
-    finished.set(false);
+    finished = false;
     tableStats = new TableStats();
 
     numRows = 0;
@@ -209,7 +208,7 @@ public class KafkaScanner implements Scanner {
   @Override
   public void close() throws IOException {
     progress = 1.0f;
-    finished.set(true);
+    finished = true;
 
     if (simpleConsumerManager != null) {
       simpleConsumerManager.close();

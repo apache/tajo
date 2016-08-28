@@ -18,7 +18,7 @@
 
 package org.apache.tajo.storage.kafka;
 
-import static org.apache.tajo.storage.kafka.TestConstants.TOPIC_NAME;
+import static org.apache.tajo.storage.kafka.KafkaTestUtil.TOPIC_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -49,12 +49,12 @@ public class TestSimpleConsumerManager {
   public static void setUpBeforeClass() throws Exception {
     KAFKA = EmbeddedKafka.createEmbeddedKafka(2181, 9092);
     KAFKA.start();
-    KAFKA.createTopic(TestConstants.DEFAULT_TEST_PARTITION_NUM, 1, TOPIC_NAME);
+    KAFKA.createTopic(KafkaTestUtil.DEFAULT_TEST_PARTITION_NUM, 1, TOPIC_NAME);
     KAFKA_SERVER_URI = URI.create("kafka://" + KAFKA.getConnectString());
 
     // Load test data.
     try (Producer<String, String> producer = KAFKA.createProducer(KAFKA.getConnectString())) {
-      TestConstants.sendTestData(producer, TOPIC_NAME);
+      KafkaTestUtil.sendTestData(producer, TOPIC_NAME);
     }
   }
 
@@ -84,7 +84,7 @@ public class TestSimpleConsumerManager {
   @Test
   public void testGetPartitions() throws Exception {
     int prtition_num = SimpleConsumerManager.getPartitions(KAFKA_SERVER_URI, TOPIC_NAME).size();
-    assertTrue(prtition_num == TestConstants.DEFAULT_TEST_PARTITION_NUM);
+    assertTrue(prtition_num == KafkaTestUtil.DEFAULT_TEST_PARTITION_NUM);
   }
 
   // Test for to fetch data from kafka.
@@ -104,6 +104,6 @@ public class TestSimpleConsumerManager {
       }
     }
 
-    TestConstants.equalTestData(receivedDataSet);
+    KafkaTestUtil.equalTestData(receivedDataSet);
   }
 }
