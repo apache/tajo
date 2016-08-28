@@ -800,7 +800,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       client = clientPool.getClient();
       Table table = client.getHiveClient().getTable(databaseName, tableName);
       table.getParameters().putAll(ProtoUtil.convertToMap(properties));
-	    client.getHiveClient().alter_table(databaseName, tableName, table);
+      client.getHiveClient().alter_table(databaseName, tableName, table);
     } catch (NoSuchObjectException nsoe) {
     } catch (Exception e) {
       throw new TajoInternalError(e);
@@ -817,10 +817,10 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
     try {
       client = clientPool.getClient();
       Table table = client.getHiveClient().getTable(databaseName, tableName);
-	    for (String propertyKey : ProtoUtil.convertStrings(propertyKeys)) {
-		    table.getParameters().remove(propertyKey);
-	    }
-	    client.getHiveClient().alter_table(databaseName, tableName, table);
+      for (String propertyKey : ProtoUtil.convertStrings(propertyKeys)) {
+        table.getParameters().remove(propertyKey);
+      }
+      client.getHiveClient().alter_table(databaseName, tableName, table);
     } catch (NoSuchObjectException nsoe) {
     } catch (Exception e) {
       throw new TajoInternalError(e);

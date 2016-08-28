@@ -254,9 +254,9 @@ public class TestHiveCatalogStore {
 
     Map<String, String> expected = getProperties(DB_NAME, REGION);
     Map<String, String> toSet = new ImmutableMap.Builder<String, String>()
-        .put("key1", "value1")
-        .put("key2", "value2")
-        .build();
+            .put("key1", "value1")
+            .put("key2", "value2")
+            .build();
     expected.putAll(toSet);
 
     setProperty(DB_NAME, REGION, toSet);
@@ -329,9 +329,9 @@ public class TestHiveCatalogStore {
 
     Map<String, String> expected = getProperties(DB_NAME, SUPPLIER);
     Map<String, String> toSet = new ImmutableMap.Builder<String, String>()
-        .put("key1", "value1")
-        .put("key2", "value2")
-        .build();
+            .put("key1", "value1")
+            .put("key2", "value2")
+            .build();
     expected.putAll(toSet);
 
     setProperty(DB_NAME, SUPPLIER, toSet);
