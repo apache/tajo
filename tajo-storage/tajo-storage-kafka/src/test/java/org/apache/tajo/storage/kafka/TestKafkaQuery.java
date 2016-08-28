@@ -18,7 +18,7 @@
 
 package org.apache.tajo.storage.kafka;
 
-import static org.apache.tajo.storage.kafka.TestConstants.DEFAULT_TEST_PARTITION_NUM;
+import static org.apache.tajo.storage.kafka.KafkaTestUtil.DEFAULT_TEST_PARTITION_NUM;
 
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.tajo.QueryTestCaseBase;
@@ -54,13 +54,13 @@ public class TestKafkaQuery extends QueryTestCaseBase {
 
     // Load test data.
     try (Producer<String, String> producer = KAFKA.createProducer(KAFKA.getConnectString())) {
-      TestConstants.sendTestData(producer, TEST_TOPIC_USER, "1|user1");
-      TestConstants.sendTestData(producer, TEST_TOPIC_USER, "2|user2");
-      TestConstants.sendTestData(producer, TEST_TOPIC_USER, "3|user3");
-      TestConstants.sendTestData(producer, TEST_TOPIC_USER, "4|user4");
-      TestConstants.sendTestData(producer, TEST_TOPIC_USER, "6|user6");
+      KafkaTestUtil.sendTestData(producer, TEST_TOPIC_USER, "1|user1");
+      KafkaTestUtil.sendTestData(producer, TEST_TOPIC_USER, "2|user2");
+      KafkaTestUtil.sendTestData(producer, TEST_TOPIC_USER, "3|user3");
+      KafkaTestUtil.sendTestData(producer, TEST_TOPIC_USER, "4|user4");
+      KafkaTestUtil.sendTestData(producer, TEST_TOPIC_USER, "6|user6");
       for (int i = 0; i < 2; i++) {
-        TestConstants.sendTestData(producer, TEST_TOPIC_PROD);
+	KafkaTestUtil.sendTestData(producer, TEST_TOPIC_PROD);
       }
     }
 
