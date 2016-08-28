@@ -49,7 +49,6 @@ public class EmbeddedKafka implements Closeable {
   private final KafkaServerStartable kafka;
 
   private final AtomicBoolean started = new AtomicBoolean();
-  private final AtomicBoolean stopped = new AtomicBoolean();
 
   public static EmbeddedKafka createEmbeddedKafka(int zookeeperPort, int kafkaPort) throws IOException {
     return new EmbeddedKafka(new EmbeddedZookeeper(zookeeperPort), kafkaPort);
@@ -88,7 +87,7 @@ public class EmbeddedKafka implements Closeable {
 
   @Override
   public void close() {
-    if (started.get() && !stopped.getAndSet(true)) {
+    if (started.get()) {
       kafka.shutdown();
       kafka.awaitShutdown();
       zookeeper.close();
@@ -96,16 +95,8 @@ public class EmbeddedKafka implements Closeable {
     }
   }
 
-  public int getZookeeperPort() {
-    return zookeeper.getPort();
-  }
-
-  public int getPort() {
-    return port;
-  }
-
   public String getConnectString() {
-    return "localhost:" + Integer.toString(port);
+    return kafka.serverConfig().hostName() + ":" + kafka.serverConfig().port();
   }
 
   public String getZookeeperConnectString() {
@@ -113,7 +104,7 @@ public class EmbeddedKafka implements Closeable {
   }
 
   public void createTopic(int partitions, int replication, String topic) {
-    checkState(started.get() && !stopped.get(), "not started!");
+    checkState(started.get(), "not started!");
 
     ZkClient zkClient = new ZkClient(getZookeeperConnectString(), 30000, 30000, ZKStringSerializer$.MODULE$);
     try {
