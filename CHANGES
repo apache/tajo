@@ -406,6 +406,9 @@ Release 0.12.0 - unreleased
 
   SUB TASKS
 
+    TAJO-1480: Kafka Consumer for kafka strage. 
+    (Contributed by Byunghwa Yun. Committed by jinho)
+
     TAJO-2156: Create GeoIP functions taking various types instead of INET4 type. (Jongyoung)
 
     TAJO-2130: Remove inet4 data type.
