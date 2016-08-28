@@ -48,11 +48,6 @@ public class KafkaFragment extends Fragment<KafkaFragmentKey> {
     this.last = last;
   }
 
-  @Override
-  public boolean isEmpty() {
-    return startKey.isEmpty() || endKey.isEmpty();
-  }
-
   public Object clone() throws CloneNotSupportedException {
     KafkaFragment frag = (KafkaFragment) super.clone();
     frag.topicName = topicName;
@@ -117,68 +112,20 @@ public class KafkaFragment extends Fragment<KafkaFragmentKey> {
   }
 
   public static class KafkaFragmentKey implements Comparable<KafkaFragmentKey> {
-    private final Integer partitionId;
-    private final Long offset;
+    private final int partitionId;
+    private final long offset;
 
-    public KafkaFragmentKey(Integer partitionId, Long offset) {
+    public KafkaFragmentKey(int partitionId, long offset) {
       this.partitionId = partitionId;
       this.offset = offset;
     }
 
-    public Integer getPartitionId() {
+    public int getPartitionId() {
       return partitionId;
     }
 
-    public Long getOffset() {
+    public long getOffset() {
       return offset;
-    }
-
-    @Override
-    public int hashCode() {
-      final int prime = 31;
-      int result = 1;
-      result = prime * result + ((offset == null) ? 0 : offset.hashCode());
-      result = prime * result + ((partitionId == null) ? 0 : partitionId.hashCode());
-      return result;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      if (this == obj)
-        return true;
-      if (obj == null)
-        return false;
-      if (getClass() != obj.getClass())
-        return false;
-      KafkaFragmentKey other = (KafkaFragmentKey) obj;
-      if (offset == null) {
-        if (other.offset != null)
-          return false;
-      } else if (!offset.equals(other.offset))
-        return false;
-      if (partitionId == null) {
-        if (other.partitionId != null)
-          return false;
-      } else if (!partitionId.equals(other.partitionId))
-        return false;
-      return true;
-    }
-
-    @Override
-    public int compareTo(KafkaFragmentKey o) {
-      if (partitionId == null || offset == null) {
-        return 1;
-      }
-
-      if (o.partitionId == null || o.offset == null) {
-        return -1;
-      }
-
-      int result = partitionId.compareTo(o.partitionId);
-      if (result == 0) {
-        result = offset.compareTo(o.offset);
-      }
-      return result;
     }
 
     @Override
@@ -192,8 +139,38 @@ public class KafkaFragment extends Fragment<KafkaFragmentKey> {
       return builder.toString();
     }
 
-    public boolean isEmpty() {
-      return partitionId == null || offset == null;
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + (int) (offset ^ (offset >>> 32));
+    result = prime * result + partitionId;
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    KafkaFragmentKey other = (KafkaFragmentKey) obj;
+    if (offset != other.offset)
+      return false;
+    if (partitionId != other.partitionId)
+      return false;
+    return true;
+  }
+
+    @Override
+    public int compareTo(KafkaFragmentKey o) {
+      int result = Integer.compare(partitionId, o.partitionId);
+      if (result == 0) {
+        result = Long.compare(offset, o.offset);
+      }
+      return result;
     }
   }
 }
