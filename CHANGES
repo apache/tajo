@@ -4,6 +4,8 @@ Release 0.12.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-2179: Add a regular expression scanner and appender. (jinho)
+
     TAJO-2165: Add 'ALTER TABLE UNSET PROPERTY' statement to Tajo DDL.
     (Lee Dongjin via jihoon)
 
@@ -20,6 +22,11 @@ Release 0.12.0 - unreleased
     TAJO-1955: Add a feature to strip quotes from CSV file. (hyunsik)
 
   IMPROVEMENT
+
+    TAJO-2180: Disable unsetting timezone property in HiveCatalogStore.
+    (Lee Dongjin via jinho)
+
+    TAJO-2170: Disable unsetting timezone property. (Lee Dongjin via jinho)
 
     TAJO-2175: Fix some glitches in source code. (Lee Dongjin via jihoon)
 
@@ -405,6 +412,15 @@ Release 0.12.0 - unreleased
     Committed by jihoon)
 
   SUB TASKS
+
+    TAJO-1488: Implement KafkaTablespace. (Byunghwa Yun via jinho)
+
+    TAJO-1487: Kafka Scanner for kafka strage. (Byunghwa Yun via jinho)
+
+    TAJO-2174: Implement HiveCatalogStore#alterTable. (Lee Dongjin via jinho)
+
+    TAJO-1480: Kafka Consumer for kafka strage. 
+    (Contributed by Byunghwa Yun. Committed by jinho)
 
     TAJO-2156: Create GeoIP functions taking various types instead of INET4 type. (Jongyoung)
 

@@ -50,6 +50,13 @@ public class StorageConstants {
 
   public static final String TEXT_SKIP_HEADER_LINE = "text.skip.headerlines";
 
+  public static final String DEFAULT_JSON_SERDE_CLASS = "org.apache.tajo.storage.json.JsonLineSerDe";
+  public static final String DEFAULT_REGEX_SERDE_CLASS = "org.apache.tajo.storage.regex.RegexLineSerDe";
+
+  public static final String TEXT_REGEX = "text.regex";
+  public static final String TEXT_REGEX_CASE_INSENSITIVE = "text.regex.case.insensitive";
+  public static final String TEXT_REGEX_OUTPUT_FORMAT_STRING = "text.regex.output.format.string";
+
   /**
    * It's the maximum number of parsing error torrence.
    *

@@ -40,6 +40,7 @@
     <jersey.version>2.6</jersey.version>
     <jetty.version>6.1.26</jetty.version>
     <parquet.version>1.8.1</parquet.version>
+    <kafka.version>0.10.0.1</kafka.version>
     <tajo.root>${project.parent.relativePath}/..</tajo.root>
     <extra.source.path>src/main/hadoop-${hadoop.version}</extra.source.path>
   </properties>

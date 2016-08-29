@@ -18,6 +18,10 @@
 
 package org.apache.tajo.catalog;
 
+import com.google.common.collect.Sets;
+
+import java.util.Set;
+
 public class CatalogConstants {
   // Linux and BSD's max username length is 32. For compatibility with other systems, we should follow it.
   public final static int MAX_USERNAME_LENGTH = 32;
@@ -58,4 +62,5 @@ public class CatalogConstants {
   public static final String COL_PARTITION_BYTES = "NUM_BYTES";
 
   public static final String INFORMATION_SCHEMA_DB_NAME = "information_schema";
+  protected static final Set<String> UNREMOVABLE_PROPERTY_SET = Sets.newHashSet("timezone");
 }
