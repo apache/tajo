@@ -742,14 +742,16 @@ public class CatalogUtil {
     if (dataFormat.equalsIgnoreCase(BuiltinStorages.TEXT)) {
       options.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
       options.set(StorageConstants.TEXT_NULL, NullDatum.DEFAULT_TEXT);
-    } else if (dataFormat.equalsIgnoreCase("JSON")) {
-      options.set(StorageConstants.TEXT_SERDE_CLASS, "org.apache.tajo.storage.json.JsonLineSerDe");
-    } else if (dataFormat.equalsIgnoreCase("RCFILE")) {
+    } else if (dataFormat.equalsIgnoreCase(BuiltinStorages.JSON)) {
+      options.set(StorageConstants.TEXT_SERDE_CLASS, StorageConstants.DEFAULT_JSON_SERDE_CLASS);
+    } else if (dataFormat.equalsIgnoreCase(BuiltinStorages.REGEX)) {
+      options.set(StorageConstants.TEXT_SERDE_CLASS, StorageConstants.DEFAULT_REGEX_SERDE_CLASS);
+    } else if (dataFormat.equalsIgnoreCase(BuiltinStorages.RCFILE)) {
       options.set(StorageConstants.RCFILE_SERDE, StorageConstants.DEFAULT_BINARY_SERDE);
-    } else if (dataFormat.equalsIgnoreCase("SEQUENCEFILE")) {
+    } else if (dataFormat.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) {
       options.set(StorageConstants.SEQUENCEFILE_SERDE, StorageConstants.DEFAULT_TEXT_SERDE);
       options.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    } else if (dataFormat.equalsIgnoreCase("PARQUET")) {
+    } else if (dataFormat.equalsIgnoreCase(BuiltinStorages.PARQUET)) {
       options.set(BLOCK_SIZE, StorageConstants.PARQUET_DEFAULT_BLOCK_SIZE);
       options.set(PAGE_SIZE, StorageConstants.PARQUET_DEFAULT_PAGE_SIZE);
       options.set(COMPRESSION, StorageConstants.PARQUET_DEFAULT_COMPRESSION_CODEC_NAME);

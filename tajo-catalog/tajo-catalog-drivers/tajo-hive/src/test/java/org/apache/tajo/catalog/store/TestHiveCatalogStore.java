@@ -31,6 +31,8 @@ import org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat;
 import org.apache.hadoop.hive.ql.io.IOConstants;
 import org.apache.hadoop.hive.ql.io.StorageFormatDescriptor;
 import org.apache.hadoop.hive.ql.io.StorageFormatFactory;
+import org.apache.hadoop.hive.serde2.RegexSerDe;
+import org.apache.hadoop.mapred.TextInputFormat;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionDesc;
@@ -828,5 +830,36 @@ public class TestHiveCatalogStore {
     assertEquals(StringEscapeUtils.escapeJava(StorageConstants.DEFAULT_FIELD_DELIMITER),
       table1.getMeta().getProperty(StorageConstants.TEXT_DELIMITER));
     store.dropTable(DB_NAME, tableName);
+  }
+
+  @Test
+  public void testTableUsingRegex() throws Exception {
+    TableMeta meta = new TableMeta(BuiltinStorages.REGEX, new KeyValueSet());
+    meta.putProperty(StorageConstants.TEXT_REGEX, "([^ ]*)");
+    meta.putProperty(StorageConstants.TEXT_REGEX_OUTPUT_FORMAT_STRING, "%1$s");
+
+    org.apache.tajo.catalog.Schema schema = SchemaBuilder.builder()
+        .add("c_custkey", TajoDataTypes.Type.TEXT)
+        .build();
+
+    TableDesc table = new TableDesc(IdentifierUtil.buildFQName(DB_NAME, CUSTOMER), schema, meta,
+        new Path(warehousePath, new Path(DB_NAME, CUSTOMER)).toUri());
+    store.createTable(table.getProto());
+    assertTrue(store.existTable(DB_NAME, CUSTOMER));
+
+    org.apache.hadoop.hive.ql.metadata.Table hiveTable = store.getHiveTable(DB_NAME, CUSTOMER);
+    assertEquals(TextInputFormat.class.getName(), hiveTable.getSd().getInputFormat());
+    assertEquals(HiveIgnoreKeyTextOutputFormat.class.getName(), hiveTable.getSd().getOutputFormat());
+    assertEquals(RegexSerDe.class.getName(), hiveTable.getSerializationLib());
+
+    TableDesc table1 = new TableDesc(store.getTable(DB_NAME, CUSTOMER));
+    assertEquals(table.getName(), table1.getName());
+    assertEquals(table.getUri(), table1.getUri());
+    assertEquals(table.getSchema().size(), table1.getSchema().size());
+    for (int i = 0; i < table.getSchema().size(); i++) {
+      assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
+    }
+
+    store.dropTable(DB_NAME, CUSTOMER);
   }
 }

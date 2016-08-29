@@ -34,6 +34,7 @@ import org.apache.hadoop.hive.ql.io.IOConstants;
 import org.apache.hadoop.hive.ql.io.StorageFormatDescriptor;
 import org.apache.hadoop.hive.ql.io.StorageFormatFactory;
 import org.apache.hadoop.hive.serde.serdeConstants;
+import org.apache.hadoop.hive.serde2.RegexSerDe;
 import org.apache.hadoop.hive.serde2.columnar.ColumnarSerDe;
 import org.apache.hadoop.hive.serde2.columnar.LazyBinaryColumnarSerDe;
 import org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe;
@@ -233,6 +234,12 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
             options.set(StorageConstants.SEQUENCEFILE_SERDE, StorageConstants.DEFAULT_TEXT_SERDE);
           }
 
+        } else if (BuiltinStorages.REGEX.equals(dataFormat)) {
+          options.set(StorageConstants.TEXT_REGEX, properties.getProperty(RegexSerDe.INPUT_REGEX));
+          options.set(StorageConstants.TEXT_REGEX_CASE_INSENSITIVE,
+              properties.getProperty(RegexSerDe.INPUT_REGEX_CASE_SENSITIVE));
+          options.set(StorageConstants.TEXT_REGEX_OUTPUT_FORMAT_STRING,
+              properties.getProperty("output.format.string"));
         }
 
         // set data size
@@ -574,6 +581,25 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
           table.putToParameters(OrcConf.COMPRESS.getAttribute(),
               tableDesc.getMeta().getProperty(OrcConf.COMPRESS.getAttribute()));
         }
+      } else if (tableDesc.getMeta().getDataFormat().equalsIgnoreCase(BuiltinStorages.REGEX)) {
+
+        sd.setInputFormat(TextInputFormat.class.getName());
+        sd.setOutputFormat(HiveIgnoreKeyTextOutputFormat.class.getName());
+        sd.getSerdeInfo().setSerializationLib(RegexSerDe.class.getName());
+
+        if (tableDesc.getMeta().containsProperty(StorageConstants.TEXT_NULL)) {
+          table.putToParameters(serdeConstants.SERIALIZATION_NULL_FORMAT,
+              StringEscapeUtils.unescapeJava(tableDesc.getMeta().getProperty(StorageConstants.TEXT_NULL)));
+          table.getParameters().remove(StorageConstants.TEXT_NULL);
+        }
+
+        sd.getSerdeInfo().putToParameters(RegexSerDe.INPUT_REGEX,
+            tableDesc.getMeta().getProperty(StorageConstants.TEXT_REGEX));
+        sd.getSerdeInfo().putToParameters(RegexSerDe.INPUT_REGEX_CASE_SENSITIVE,
+            tableDesc.getMeta().getProperty(StorageConstants.TEXT_REGEX_CASE_INSENSITIVE, "false"));
+        sd.getSerdeInfo().putToParameters("output.format.string",
+            tableDesc.getMeta().getProperty(StorageConstants.TEXT_REGEX_OUTPUT_FORMAT_STRING));
+
       } else {
         throw new UnsupportedException(tableDesc.getMeta().getDataFormat() + " in HivecatalogStore");
       }
