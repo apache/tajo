@@ -128,13 +128,13 @@ public class FileTablespace extends Tablespace {
   @Override
   public long getTableVolume(TableDesc table, Optional<EvalNode> filter) {
     Path path = new Path(table.getUri());
-    ContentSummary summary;
+    long totalVolume = 0L;
     try {
-      summary = fs.getContentSummary(path);
+      totalVolume = calculateSize(path);
     } catch (IOException e) {
       throw new TajoInternalError(e);
     }
-    return summary.getLength();
+    return totalVolume;
   }
 
   @Override
@@ -246,6 +246,13 @@ public class FileTablespace extends Tablespace {
     return tablets;
   }
 
+  /**
+   * Calculate the total size of all files in the indicated Path
+   *
+   * @param path to use
+   * @return calculated size
+   * @throws IOException
+   */
   public long calculateSize(Path tablePath) throws IOException {
     FileSystem fs = tablePath.getFileSystem(conf);
     long totalSize = 0;

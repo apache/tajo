@@ -413,6 +413,9 @@ Release 0.12.0 - unreleased
 
   SUB TASKS
 
+    TAJO-2069: Implement finding the total size of all objects in a bucket
+    with AWS SDK. (jaehwa)
+
     TAJO-1488: Implement KafkaTablespace. (Byunghwa Yun via jinho)
 
     TAJO-1487: Kafka Scanner for kafka strage. (Byunghwa Yun via jinho)
