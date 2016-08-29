@@ -19,6 +19,7 @@
 package org.apache.tajo.catalog.store;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -48,6 +49,8 @@ import org.apache.tajo.algebra.IsNullPredicate;
 import org.apache.tajo.algebra.JsonHelper;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
+import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -58,10 +61,12 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.util.PartitionFilterAlgebraVisitor;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.type.TypeProtobufEncoder;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.ProtoUtil;
 import org.apache.thrift.TException;
 
 import java.io.File;
@@ -681,10 +686,10 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         dropPartition(databaseName, tableName, partitionDesc);
         break;
       case SET_PROPERTY:
-        // TODO - not implemented yet
+        setProperties(databaseName, tableName, alterTableDescProto.getParams());
         break;
       case UNSET_PROPERTY:
-        // TODO - not implemented yet
+        unsetProperties(databaseName, tableName, alterTableDescProto.getUnsetPropertyKeys());
         break;
       default:
         //TODO
@@ -806,6 +811,52 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         values.add(keyProto.getPartitionValue());
       }
       client.getHiveClient().dropPartition(databaseName, tableName, values, true);
+    } catch (Exception e) {
+      throw new TajoInternalError(e);
+    } finally {
+      if (client != null) {
+        client.release();
+      }
+    }
+  }
+
+  private void setProperties(final String databaseName, final String tableName,
+                             final PrimitiveProtos.KeyValueSetProto properties) {
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
+    try {
+      client = clientPool.getClient();
+      Table table = client.getHiveClient().getTable(databaseName, tableName);
+      table.getParameters().putAll(ProtoUtil.convertToMap(properties));
+      client.getHiveClient().alter_table(databaseName, tableName, table);
+    } catch (NoSuchObjectException nsoe) {
+    } catch (Exception e) {
+      throw new TajoInternalError(e);
+    } finally {
+      if (client != null) {
+        client.release();
+      }
+    }
+  }
+
+  private void unsetProperties(final String databaseName, final String tableName,
+                               PrimitiveProtos.StringListProto propertyKeys) {
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
+    try {
+      client = clientPool.getClient();
+      Table table = client.getHiveClient().getTable(databaseName, tableName);
+
+      Set<String> keys = Sets.newHashSet(propertyKeys.getValuesList());
+      Set<String> violations = Sets.intersection(keys, UNREMOVABLE_PROPERTY_SET);
+
+      if (!violations.isEmpty()) {
+        throw new UnremovableTablePropertyException(violations.toArray(new String[0]));
+      } else {
+        for (String key : keys) {
+          table.getParameters().remove(key);
+        }
+        client.getHiveClient().alter_table(databaseName, tableName, table);
+      }
+    } catch (NoSuchObjectException nsoe) {
     } catch (Exception e) {
       throw new TajoInternalError(e);
     } finally {

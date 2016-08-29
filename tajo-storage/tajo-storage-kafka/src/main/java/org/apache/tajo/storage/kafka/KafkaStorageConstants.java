@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,12 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.fragment;
+package org.apache.tajo.storage.kafka;
 
-public class BuiltinFragmentKinds {
-  public static final String FILE = "FILE";
-  public static final String HBASE = "HBASE";
-  public static final String JDBC = "JDBC";
-  public static final String HTTP = "EXAMPLE-HTTP";
-  public static final String KAFKA = "KAFKA";
+import org.apache.tajo.storage.StorageConstants;
+
+public class KafkaStorageConstants extends StorageConstants {
+  public static final String KAFKA_TOPIC = "kafka.topic";
+  public static final String KAFKA_TOPIC_PARTITION = "kafka.topic.partition";
+  public static final String KAFKA_FRAGMENT_SIZE = "kafka.fragment.size";
+  public static final String KAFKA_POLL_TIMEOUT = "kafka.poll.timeout";
+
+  public static final String DEFAULT_PARTITION = "all";
+  public static final String DEFAULT_FRAGMENT_SIZE = "100000";
+  public static final String DEFAULT_POLL_TIMEOUT = "30000";
 }
