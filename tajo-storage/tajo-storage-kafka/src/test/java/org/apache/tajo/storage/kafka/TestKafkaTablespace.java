@@ -22,22 +22,27 @@ import static org.apache.tajo.storage.kafka.KafkaTestUtil.TOPIC_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.Producer;
-import org.apache.kafka.common.PartitionInfo;
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.storage.TablespaceManager;
+import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.kafka.server.EmbeddedKafka;
+import org.apache.tajo.util.KeyValueSet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.net.URI;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
+import java.util.Map;
 
-public class TestSimpleConsumerManager {
+import net.minidev.json.JSONObject;
 
+public class TestKafkaTablespace {
   private static EmbeddedKafka KAFKA;
-
   private static URI KAFKA_SERVER_URI;
 
   /**
@@ -49,13 +54,26 @@ public class TestSimpleConsumerManager {
   public static void setUpBeforeClass() throws Exception {
     KAFKA = EmbeddedKafka.createEmbeddedKafka(2181, 9092);
     KAFKA.start();
-    KAFKA.createTopic(KafkaTestUtil.DEFAULT_TEST_PARTITION_NUM, 1, TOPIC_NAME);
+    KAFKA.createTopic(1, 1, TOPIC_NAME);
     KAFKA_SERVER_URI = URI.create("kafka://" + KAFKA.getConnectString());
 
     // Load test data.
     try (Producer<String, String> producer = KAFKA.createProducer(KAFKA.getConnectString())) {
-      KafkaTestUtil.sendTestData(producer, TOPIC_NAME);
+      for (int i = 0; i < 20; i++) {
+	KafkaTestUtil.sendTestData(producer, TOPIC_NAME);
+      }
     }
+
+    JSONObject configElements = new JSONObject();
+    KafkaTablespace hBaseTablespace = new KafkaTablespace("cluster1", KAFKA_SERVER_URI, configElements);
+    hBaseTablespace.init(new TajoConf());
+    TablespaceManager.addTableSpaceForTest(hBaseTablespace);
+  }
+
+  @Test
+  public void testTablespaceHandler() throws Exception {
+    assertTrue((TablespaceManager.getByName("cluster1")) instanceof KafkaTablespace);
+    assertTrue((TablespaceManager.get(KAFKA_SERVER_URI)) instanceof KafkaTablespace);
   }
 
   /**
@@ -68,42 +86,25 @@ public class TestSimpleConsumerManager {
     KAFKA.close();
   }
 
-  @Test
-  public void testExtractBroker() {
-    assertEquals("host1:9092,host2:9092,host3:9092",
-        SimpleConsumerManager.extractBroker(URI.create("kafka://host1:9092,host2:9092,host3:9092")));
-    assertEquals("host1:9092,host2:9092,host3:9092",
-        SimpleConsumerManager.extractBroker(URI.create("kafka://host1:9092,host2:9092,host3:9092/user")));
-  }
-
   /**
-   * Test for getting topic partitions.
+   * Test for getSplit.
    *
    * @throws Exception
    */
   @Test
-  public void testGetPartitions() throws Exception {
-    int prtition_num = SimpleConsumerManager.getPartitions(KAFKA_SERVER_URI, TOPIC_NAME).size();
-    assertTrue(prtition_num == KafkaTestUtil.DEFAULT_TEST_PARTITION_NUM);
-  }
-
-  // Test for to fetch data from kafka.
-  @Test
-  public void testFetchData() throws Exception {
-    Set<String> receivedDataSet = new HashSet<>();
-    for (PartitionInfo partitionInfo : SimpleConsumerManager.getPartitions(KAFKA_SERVER_URI, TOPIC_NAME)) {
-      int partitionId = partitionInfo.partition();
-      try (SimpleConsumerManager cm = new SimpleConsumerManager(KAFKA_SERVER_URI, TOPIC_NAME, partitionId)) {
-        long startOffset = cm.getEarliestOffset();
-        long lastOffset = cm.getLatestOffset();
-        if (startOffset < lastOffset) {
-          for (ConsumerRecord<byte[], byte[]> message : cm.poll(startOffset, Long.MAX_VALUE)) {
-            receivedDataSet.add(new String(message.value(), "UTF-8"));
-          }
-        }
-      }
+  public void testGetSplit() throws Exception {
+    TableMeta meta = CatalogUtil.newTableMeta("KAFKA", new TajoConf());
+    Map<String, String> option = new java.util.HashMap<String, String>();
+    option.put(KafkaStorageConstants.KAFKA_TOPIC, TOPIC_NAME);
+    option.put(KafkaStorageConstants.KAFKA_FRAGMENT_SIZE, "10");
+    meta.setPropertySet(new KeyValueSet(option));
+    TableDesc td = new TableDesc("test_table", null, meta, null);
+    KafkaTablespace kafkaTablespace = TablespaceManager.getByName("cluster1");
+    List<Fragment> fragmentList = kafkaTablespace.getSplits("", td, false, null);
+    long totalCount = 0;
+    for (int i = 0; i < fragmentList.size(); i++) {
+      totalCount += fragmentList.get(i).getLength();
     }
-
-    KafkaTestUtil.equalTestData(receivedDataSet);
+    assertEquals(100, totalCount);
   }
 }

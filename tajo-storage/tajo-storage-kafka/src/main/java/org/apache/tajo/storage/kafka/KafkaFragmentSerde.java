@@ -40,6 +40,7 @@ public class KafkaFragmentSerde implements FragmentSerde<KafkaFragment, KafkaFra
         .setTopicName(fragment.getTopicName())
         .setStartOffset(fragment.getStartKey().getOffset())
         .setLastOffset(fragment.getEndKey().getOffset())
+        .setPartitionId(fragment.getPartitionId())
         .setLast(fragment.isLast())
         .setLength(fragment.getLength())
         .setLeaderHost(fragment.getHostNames().get(0))

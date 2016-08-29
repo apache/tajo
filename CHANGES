@@ -408,6 +408,8 @@ Release 0.12.0 - unreleased
 
   SUB TASKS
 
+    TAJO-1488: Implement KafkaTablespace. (Byunghwa Yun via jinho)
+
     TAJO-1487: Kafka Scanner for kafka strage. (Byunghwa Yun via jinho)
 
     TAJO-2174: Implement HiveCatalogStore#alterTable. (Lee Dongjin via jinho)

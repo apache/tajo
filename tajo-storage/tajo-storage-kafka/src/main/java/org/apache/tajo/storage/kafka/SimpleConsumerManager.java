@@ -146,8 +146,12 @@ public class SimpleConsumerManager implements Closeable {
   static String extractBroker(URI uri) {
     String uriStr = uri.toString();
     int start = uriStr.indexOf("/") + 2;
-
-    return uriStr.substring(start);
+    int end = uriStr.indexOf("/", start);
+    if (end < 0) {
+      return uriStr.substring(start);
+    } else {
+      return uriStr.substring(start, end);
+    }
   }
 
   /**
