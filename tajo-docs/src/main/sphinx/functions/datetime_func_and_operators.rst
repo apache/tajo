@@ -4,13 +4,13 @@ DateTime Functions and Operators
 
   * Note : Example result may be various based on time zone.
 
-.. function:: add_days (date date|timestamp, day int)
+.. function:: add_days (date DATE|TIMESTAMP, day INT*)
 
   Returns date value which is added with given day parameter.
 
   :param date: base timestamp or date
   :param day: day value to be added
-  :rtype: timestamp
+  :rtype: TIMESTAMP
   :example:
           
   .. code-block:: sql
@@ -21,13 +21,13 @@ DateTime Functions and Operators
     select add_days(timestamp '2013-12-05 12:10:20', -7);
     > 2013-11-28 03:10:20
 
-.. function:: add_months (date date|timestamp, month int)
+.. function:: add_months (date DATE|TIMESTAMP, month INT*)
 
   Returns date value which is added with given month parameter.
 
   :param date: base timestamp or date
   :param month: month value to be added
-  :rtype: timestamp
+  :rtype: TIMESTAMP
   :example:
           
   .. code-block:: sql
@@ -39,7 +39,7 @@ DateTime Functions and Operators
 
   Returns current date.
 
-  :rtype: date
+  :rtype: DATE
           
   .. code-block:: sql
 
@@ -50,20 +50,20 @@ DateTime Functions and Operators
 
   Returns current time.
 
-  :rtype: time
+  :rtype: TIME
           
   .. code-block:: sql
 
     select current_time();
     > 05:18:27.651999
 
-.. function:: extract(field FROM source date|timestamp|time)
+.. function:: extract(field FROM source DATE|TIMESTAMP|TIME)
 
   The extract function retrieves subfields such as year or hour from date/time values. *source* must be a value expression of type *timestamp*, or *time*. (Expressions of type *date* are cast to *timestamp* and can therefore be used as well.) *field* is an identifier that selects what field to extract from the source value. The extract function returns values of type double precision. The following are valid field names:
 
   :param field: extract field
   :param source: source value
-  :rtype: float8
+  :rtype: FLOAT8
 
   **century**
 
@@ -234,13 +234,13 @@ DateTime Functions and Operators
 
   The date_part function is also supported. It is equivalent to the SQL-standard function extract:
 
-.. function:: date_part(field text, source date|timestamp|time)
+.. function:: date_part(field TEXT, source DATE|TIMESTAMP|TIME)
 
   Note that here the field parameter needs to be a string value, not a name. The valid field names for date_part are the same as for extract.
 
   :param field: extract field
   :param source: source value
-  :rtype: float8
+  :rtype: FLOAT8
 
   .. code-block:: sql
 
@@ -251,7 +251,7 @@ DateTime Functions and Operators
 
   Returns current timestamp
 
-  :rtype: timestamp
+  :rtype: TIMESTAMP
   :example:
 
   .. code-block:: sql
@@ -259,58 +259,58 @@ DateTime Functions and Operators
     select now();
     > 2014-09-23 08:32:43.286
 
-.. function:: to_char(src timestamp, format text)
+.. function:: to_char(src TIMESTAMP, format TEXT)
 
   Converts timestamp to text. For more detailed, see 'Date/Time Formatting and Conversion' section below.
 
   :param src: timestamp to be converted
   :param format: format string
-  :rtype: text
+  :rtype: TEXT
 
   .. code-block:: sql
 
     select to_char(current_timestamp, 'yyyy-MM-dd');
     > 2014-09-23
 
-.. function:: to_date(src text, format text)
+.. function:: to_date(src TEXT, format TEXT)
 
   Converts text to date. For more detailed, see 'Date/Time Formatting and Conversion' section below.
 
   :param src: date string to be converted
   :param format: format string
-  :rtype: date
+  :rtype: DATE
 
   .. code-block:: sql
 
     select to_date('2014-01-04', 'YYYY-MM-DD');
     > 2014-01-04
 
-.. function:: to_timestamp(epoch int)
+.. function:: to_timestamp(epoch INT*)
 
   Converts int(UNIX epoch) to timestamp.
 
   :param epoch: second value from Jan. 1, 1970
-  :rtype: timestamp
+  :rtype: TIMESTAMP
 
   .. code-block:: sql
 
     select to_timestamp(412312345);
     > 1983-01-25 03:12:25
 
-.. function:: to_timestamp(src text, format text)
+.. function:: to_timestamp(src TEXT, format TEXT)
 
   Converts text timestamp. For more detailed, see 'Date/Time Formatting and Conversion' section below.
 
   :param src: timestamp string to be converted
   :param format: format string
-  :rtype: timestamp
+  :rtype: TIMESTAMP
 
   .. code-block:: sql
 
     select to_timestamp('97/2/16 8:14:30', 'FMYYYY/FMMM/FMDD FMHH:FMMI:FMSS');
     > 0097-02-15 23:14:30
 
-.. function:: utc_usec_to (string text , timestamp long , dayOfWeek int)
+.. function:: utc_usec_to (string TEXT , timestamp INT8 [, dayOfWeek INT4])
 
   * If the **first parameter** is 'day'.
 
@@ -337,16 +337,21 @@ DateTime Functions and Operators
     Returns a UNIX timestamp in microseconds that represents a day in the week of the
     For example, if unix_timestamp occurs on Friday, 2008-04-11, and you set day_of_week to 2 (Tuesday), the function returns a UNIX timestamp for Tuesday, 2008-04-08.
 
-  :param string: could be 'day' 'hour' 'month' 'year' 'week'
-  :param long: unix timestamp in microseconds
-  :param int: day of the week from 0 (Sunday) to 6 (Saturday).Optional parameter required only if first parameter is 'week'
-  :rtype: long
+  :param string: could be one of 'day', 'hour', 'month', 'year' and 'week'
+  :param timestamp: unix timestamp in microseconds
+  :param dayOfWeek: day of the week from 0 (Sunday) to 6 (Saturday). This is optional parameter required only if first parameter is 'week'
+  :rtype: INT8
   :example:
 
   .. code-block:: sql
 
     SELECT utc_usec_to('day', 1274259481071200);
     > 1274227200000000
+
+
+.. note:: ``INT*`` means various size of integer types can be accepted. And ``FLOAT*`` means both of ``FLOAT4`` and ``FLOAT8`` are OK.
+    For your information, in Tajo, ``INT`` is alias for ``INT4`` and ``FLOAT`` is one for ``FLOAT4``.
+    See :doc:`/sql_language/data_model` .
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Date/Time Formatting and Conversion

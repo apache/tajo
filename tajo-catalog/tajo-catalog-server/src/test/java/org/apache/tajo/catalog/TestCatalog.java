@@ -970,7 +970,7 @@ public class TestCatalog {
   }
 
   @Test
-  public void testAlterTableName () throws Exception {
+  public void testAlterTable() throws Exception {
 
     //CREATE_TABLE
     TableDesc tableRenameTestDesc = createMockupTable("default", "mycooltable") ;
@@ -1001,6 +1001,12 @@ public class TestCatalog {
     setPropertyDesc = catalog.getTableDesc("default","mynewcooltable");
     assertNotEquals(prevTimeZone, setPropertyDesc.getMeta().getProperty("timezone"));
     assertEquals(newTimeZone, setPropertyDesc.getMeta().getProperty("timezone"));
+
+    //UNSET_PROPERTY
+    catalog.alterTable(createMockAlterTableUnsetProperty(Sets.newHashSet("dummy")));
+    setPropertyDesc = catalog.getTableDesc("default","mynewcooltable");
+    assertTrue(setPropertyDesc.getMeta().getPropertySet().containsKey("timezone"));
+    assertFalse(setPropertyDesc.getMeta().getPropertySet().containsKey("dummy"));
   }
 
   private AlterTableDesc createMockAlterTableName(){
@@ -1033,6 +1039,14 @@ public class TestCatalog {
     alterTableDesc.setTableName("default.mynewcooltable");
     alterTableDesc.setProperty("timezone", newTimeZone);
     alterTableDesc.setAlterTableType(AlterTableType.SET_PROPERTY);
+    return alterTableDesc;
+  }
+
+  private AlterTableDesc createMockAlterTableUnsetProperty(Set<String> keys) {
+    AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName("default.mynewcooltable");
+    alterTableDesc.setUnsetPropertyKey(keys);
+    alterTableDesc.setAlterTableType(AlterTableType.UNSET_PROPERTY);
     return alterTableDesc;
   }
 

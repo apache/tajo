@@ -40,6 +40,7 @@
     <jersey.version>2.6</jersey.version>
     <jetty.version>6.1.26</jetty.version>
     <parquet.version>1.8.1</parquet.version>
+    <kafka.version>0.10.0.1</kafka.version>
     <aws-java-sdk.version>1.7.4</aws-java-sdk.version>
     <httpclient.version>4.5</httpclient.version>
     <tajo.root>${project.parent.relativePath}/..</tajo.root>
@@ -803,11 +804,6 @@
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-storage-hdfs</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.tajo</groupId>
-        <artifactId>tajo-storage-s3</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

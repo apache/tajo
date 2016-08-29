@@ -748,4 +748,33 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
       executeString("DROP TABLE testbuiltin11 PURGE");
     }
   }
+
+  @Test
+  public void testStringAgg() throws Exception {
+    Schema schema = SchemaBuilder.builder()
+        .add("id", TajoDataTypes.Type.INT4)
+        .add("value", TajoDataTypes.Type.TEXT)
+        .build();
+    String[] data = new String[]{
+        "1|\\N",
+        "1|a",
+        "1|b",
+        "1|c",
+        "2|d",
+        "2|f"};
+    TajoTestingCluster.createTable(conf, "testbuiltin11", schema, data, 1);
+
+    try {
+      ResultSet res = executeString("select string_agg(value, '|') as value from testbuiltin11 group by id order by id");
+      String ascExpected = "value\n" +
+          "-------------------------------\n" +
+          "null|a|b|c\n" +
+          "d|f\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE testbuiltin11 PURGE");
+    }
+  }
 }

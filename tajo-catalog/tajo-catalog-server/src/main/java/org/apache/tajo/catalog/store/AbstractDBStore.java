@@ -21,7 +21,9 @@
  */
 package org.apache.tajo.catalog.store;
 
+import com.google.common.collect.Sets;
 import com.google.protobuf.InvalidProtocolBufferException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -36,6 +38,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.util.PartitionFilterAlgebraVisitor;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.type.TypeProtobufEncoder;
 import org.apache.tajo.type.TypeStringEncoder;
@@ -977,7 +980,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   public void alterTable(CatalogProtos.AlterTableDescProto alterTableDescProto)
       throws UndefinedDatabaseException, DuplicateTableException, DuplicateColumnException,
       DuplicatePartitionException, UndefinedPartitionException, UndefinedColumnException, UndefinedTableException,
-      UndefinedPartitionMethodException, AmbiguousTableException {
+      UndefinedPartitionMethodException, AmbiguousTableException, UnremovableTablePropertyException {
 
     String[] splitted = IdentifierUtil.splitTableName(alterTableDescProto.getTableName());
     if (splitted.length == 1) {
@@ -1037,6 +1040,9 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     case SET_PROPERTY:
       setProperties(tableId, alterTableDescProto.getParams());
       break;
+    case UNSET_PROPERTY:
+      unsetProperties(tableId, alterTableDescProto.getUnsetPropertyKeys());
+      break;
     default:
     }
   }
@@ -1093,6 +1099,46 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           pstmt.setInt(1, tableId);
           pstmt.setString(2, entry.getKey());
           pstmt.setString(3, entry.getValue());
+          pstmt.executeUpdate();
+          pstmt.close();
+        }
+      }
+
+      conn.commit();
+    } catch (Throwable sqlException) {
+      throw new TajoInternalError(sqlException);
+    } finally {
+      CatalogUtil.closeQuietly(pstmt);
+    }
+  }
+
+  private void unsetProperties(final int tableId, final PrimitiveProtos.StringListProto propertyKeys)
+      throws UnremovableTablePropertyException {
+    final String deleteSql = "DELETE FROM " + TB_OPTIONS + " WHERE TID=? AND KEY_=?";
+
+    Connection conn;
+    PreparedStatement pstmt = null;
+
+    Set<String> keys = Sets.newHashSet(propertyKeys.getValuesList());
+    Set<String> violations = Sets.intersection(keys, UNREMOVABLE_PROPERTY_SET);
+
+    if (!violations.isEmpty()) {
+      throw new UnremovableTablePropertyException(violations.toArray(new String[0]));
+    }
+
+    Map<String, String> oldProperties = getTableOptions(tableId);
+
+    try {
+      conn = getConnection();
+      conn.setAutoCommit(false);
+
+      for (String key : propertyKeys.getValuesList()) {
+        if (oldProperties.containsKey(key)) {
+          // unset property
+          pstmt = conn.prepareStatement(deleteSql);
+
+          pstmt.setInt(1, tableId);
+          pstmt.setString(2, key);
           pstmt.executeUpdate();
           pstmt.close();
         }

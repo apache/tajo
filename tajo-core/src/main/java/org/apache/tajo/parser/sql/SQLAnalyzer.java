@@ -1325,6 +1325,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
       if (checkIfExist(ctx.USING())) {
         String fileType = ctx.storage_type.getText();
+        if (fileType.equals("csv")) {
+          throw new TajoRuntimeException(new SQLSyntaxError("Using csv storage type is disallowed. Please use the text storage type instead."));
+        }
         createTable.setStorageType(fileType);
       }
 
@@ -1931,6 +1934,10 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       alterTable.setParams(getProperties(ctx.property_list()));
     }
 
+    if (checkIfExist(ctx.property_key_list())) {
+      alterTable.setUnsetPropertyKeys(getPropertyKeys(ctx.property_key_list()));
+    }
+
     alterTable.setAlterTableOpType(determineAlterTableType(ctx));
 
     return alterTable;
@@ -1945,6 +1952,14 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     return params;
   }
 
+  private List<String> getPropertyKeys(Property_key_listContext ctx) {
+    List<String> keys = Lists.newArrayList();
+    for (int i = 0; i < ctx.property_key().size(); i++) {
+      keys.add(stripQuote(ctx.property_key(i).key.getText()));
+    }
+    return keys;
+  }
+
   private AlterTableOpType determineAlterTableType(Alter_table_statementContext ctx) {
 
     final int RENAME_MASK = 00000001;
@@ -1954,6 +1969,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     final int DROP_MASK = 00001001;
     final int PARTITION_MASK = 00000020;
     final int SET_MASK = 00000002;
+    final int UNSET_MASK = 00000200;
     final int PROPERTY_MASK = 00010000;
     final int REPAIR_MASK = 00000003;
 
@@ -1983,6 +1999,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
             break;
           case SET:
             val = val | SET_MASK;
+            break;
+          case UNSET:
+            val = val | UNSET_MASK;
             break;
           case PROPERTY:
             val = val | PROPERTY_MASK;
@@ -2015,6 +2034,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         return AlterTableOpType.DROP_PARTITION;
       case 4098:
         return AlterTableOpType.SET_PROPERTY;
+      case 4224:
+        return AlterTableOpType.UNSET_PROPERTY;
       default:
         return null;
     }

@@ -293,6 +293,7 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
     public LogicalNode visitSort(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, Sort expr) throws TajoException {
       stack.push(expr);
       LogicalNode child = visit(ctx, stack, expr.getChild());
+
       stack.pop();
 
       SortNode sortNode = ctx.getPlan().createNode(SortNode.class);

@@ -24,6 +24,7 @@ import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.schema.IdentifierUtil;
@@ -86,6 +87,38 @@ public class TestAlterTable extends QueryTestCaseBase {
     ResultSet after_res = executeQuery();
     assertResultSet(after_res, "after_set_property_delimiter.result");
     cleanupQuery(after_res);
+  }
+
+  @Test
+  public final void testAlterTableUnsetProperty() throws Exception {
+    executeDDL("table2_ddl.sql", "table2.tbl", "ALTY");
+    String tableName = IdentifierUtil.buildFQName(getCurrentDatabase(), "alty");
+    assertTrue(catalog.existsTable(tableName));
+
+    TableDesc tableDesc = catalog.getTableDesc(tableName);
+    TableMeta tableMeta = tableDesc.getMeta();
+    assertEquals(tableMeta.getPropertySet().size(), 3);
+    assertNotNull(tableMeta.getProperty("timezone"));
+    assertNotNull(tableMeta.getProperty("text.null"));
+    assertEquals(tableMeta.getProperty("text.delimiter"), "\\u002b");
+
+    executeDDL("alter_table_unset_property_delimiter.sql", null);
+
+    tableDesc = catalog.getTableDesc(tableName);
+    tableMeta = tableDesc.getMeta();
+    assertEquals(tableMeta.getPropertySet().size(), 2);
+    assertNotNull(tableMeta.getProperty("timezone"));
+    assertNotNull(tableMeta.getProperty("text.null"));
+    assertFalse(tableMeta.getPropertySet().containsKey("text.delimiter"));
+
+    executeDDL("alter_table_unset_not_exists_property.sql", null);
+
+    tableDesc = catalog.getTableDesc(tableName);
+    tableMeta = tableDesc.getMeta();
+    assertEquals(tableMeta.getPropertySet().size(), 2);
+    assertNotNull(tableMeta.getProperty("timezone"));
+    assertNotNull(tableMeta.getProperty("text.null"));
+    assertFalse(tableMeta.getPropertySet().containsKey("text.delimiter"));
   }
 
   // TODO: This should be added at TAJO-1891

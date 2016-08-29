@@ -19,6 +19,7 @@
 package org.apache.tajo.catalog;
 
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.DataTypeUtil;
@@ -26,7 +27,10 @@ import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.*;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableIdentifierProto;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
@@ -50,44 +54,14 @@ import static org.apache.tajo.common.TajoDataTypes.Type;
 
 public class CatalogUtil {
 
-
   public static String getBackwardCompitableDataFormat(String dataFormat) {
-    return getDataFormatAsString(asDataFormat(dataFormat));
-  }
-
-  public static String getDataFormatAsString(final DataFormat type) {
-    if (type == DataFormat.TEXTFILE) {
-      return BuiltinStorages.TEXT;
-    } else {
-      return type.name();
-    }
-  }
-
-  public static DataFormat asDataFormat(final String typeStr) {
-    if (typeStr.equalsIgnoreCase("CSV")) {
-      return DataFormat.TEXTFILE;
-    } else if (typeStr.equalsIgnoreCase(DataFormat.RAW.name())) {
-      return CatalogProtos.DataFormat.RAW;
-    } else if (typeStr.equalsIgnoreCase(CatalogProtos.DataFormat.ROWFILE.name())) {
-      return DataFormat.ROWFILE;
-    } else if (typeStr.equalsIgnoreCase(DataFormat.RCFILE.name())) {
-      return DataFormat.RCFILE;
-    } else if (typeStr.equalsIgnoreCase(CatalogProtos.DataFormat.ORC.name())) {
-      return CatalogProtos.DataFormat.ORC;
-    } else if (typeStr.equalsIgnoreCase(DataFormat.PARQUET.name())) {
-      return DataFormat.PARQUET;
-    } else if (typeStr.equalsIgnoreCase(DataFormat.SEQUENCEFILE.name())) {
-      return DataFormat.SEQUENCEFILE;
-    } else if (typeStr.equalsIgnoreCase(DataFormat.AVRO.name())) {
-      return CatalogProtos.DataFormat.AVRO;
-    } else if (typeStr.equalsIgnoreCase(BuiltinStorages.TEXT)) {
-      return CatalogProtos.DataFormat.TEXTFILE;
-    } else if (typeStr.equalsIgnoreCase(CatalogProtos.DataFormat.JSON.name())) {
-      return CatalogProtos.DataFormat.JSON;
-    } else if (typeStr.equalsIgnoreCase(CatalogProtos.DataFormat.HBASE.name())) {
-      return CatalogProtos.DataFormat.HBASE;
-    } else {
-      return null;
+    final String upperDataFormat = dataFormat.toUpperCase();
+    switch (upperDataFormat) {
+      case "CSV":
+      case "TEXTFILE":
+        return BuiltinStorages.TEXT;
+      default:
+        return dataFormat;
     }
   }
 
@@ -514,41 +488,47 @@ public class CatalogUtil {
     Collections.addAll(IdentifierUtil.RESERVED_KEYWORDS_SET, IdentifierUtil.RESERVED_KEYWORDS);
   }
 
-  public static AlterTableDesc renameColumn(String tableName, String oldColumName, String newColumName,
-                                            AlterTableType alterTableType) {
+  public static AlterTableDesc renameColumn(String tableName, String oldColumName, String newColumName) {
     final AlterTableDesc alterTableDesc = new AlterTableDesc();
     alterTableDesc.setTableName(tableName);
     alterTableDesc.setColumnName(oldColumName);
     alterTableDesc.setNewColumnName(newColumName);
-    alterTableDesc.setAlterTableType(alterTableType);
+    alterTableDesc.setAlterTableType(AlterTableType.RENAME_COLUMN);
     return alterTableDesc;
   }
 
-  public static AlterTableDesc renameTable(String tableName, String newTableName, AlterTableType alterTableType,
-                                           @Nullable Path newTablePath) {
+  public static AlterTableDesc renameTable(String tableName, String newTableName, @Nullable Path newTablePath) {
     final AlterTableDesc alterTableDesc = new AlterTableDesc();
     alterTableDesc.setTableName(tableName);
     alterTableDesc.setNewTableName(newTableName);
-    alterTableDesc.setAlterTableType(alterTableType);
+    alterTableDesc.setAlterTableType(AlterTableType.RENAME_TABLE);
     if (newTablePath != null) {
       alterTableDesc.setNewTablePath(newTablePath);
     }
     return alterTableDesc;
   }
 
-  public static AlterTableDesc addNewColumn(String tableName, Column column, AlterTableType alterTableType) {
+  public static AlterTableDesc addNewColumn(String tableName, Column column) {
     final AlterTableDesc alterTableDesc = new AlterTableDesc();
     alterTableDesc.setTableName(tableName);
     alterTableDesc.setAddColumn(column);
-    alterTableDesc.setAlterTableType(alterTableType);
+    alterTableDesc.setAlterTableType(AlterTableType.ADD_COLUMN);
     return alterTableDesc;
   }
 
-  public static AlterTableDesc setProperty(String tableName, KeyValueSet params, AlterTableType alterTableType) {
+  public static AlterTableDesc setProperty(String tableName, KeyValueSet params) {
     final AlterTableDesc alterTableDesc = new AlterTableDesc();
     alterTableDesc.setTableName(tableName);
     alterTableDesc.setProperties(params);
-    alterTableDesc.setAlterTableType(alterTableType);
+    alterTableDesc.setAlterTableType(AlterTableType.SET_PROPERTY);
+    return alterTableDesc;
+  }
+
+  public static AlterTableDesc unsetProperty(String tableName, String[] propertyKeys) {
+    final AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName(tableName);
+    alterTableDesc.setUnsetPropertyKey(Sets.newHashSet(propertyKeys));
+    alterTableDesc.setAlterTableType(AlterTableType.UNSET_PROPERTY);
     return alterTableDesc;
   }
 
@@ -762,14 +742,16 @@ public class CatalogUtil {
     if (dataFormat.equalsIgnoreCase(BuiltinStorages.TEXT)) {
       options.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
       options.set(StorageConstants.TEXT_NULL, NullDatum.DEFAULT_TEXT);
-    } else if (dataFormat.equalsIgnoreCase("JSON")) {
-      options.set(StorageConstants.TEXT_SERDE_CLASS, "org.apache.tajo.storage.json.JsonLineSerDe");
-    } else if (dataFormat.equalsIgnoreCase("RCFILE")) {
+    } else if (dataFormat.equalsIgnoreCase(BuiltinStorages.JSON)) {
+      options.set(StorageConstants.TEXT_SERDE_CLASS, StorageConstants.DEFAULT_JSON_SERDE_CLASS);
+    } else if (dataFormat.equalsIgnoreCase(BuiltinStorages.REGEX)) {
+      options.set(StorageConstants.TEXT_SERDE_CLASS, StorageConstants.DEFAULT_REGEX_SERDE_CLASS);
+    } else if (dataFormat.equalsIgnoreCase(BuiltinStorages.RCFILE)) {
       options.set(StorageConstants.RCFILE_SERDE, StorageConstants.DEFAULT_BINARY_SERDE);
-    } else if (dataFormat.equalsIgnoreCase("SEQUENCEFILE")) {
+    } else if (dataFormat.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) {
       options.set(StorageConstants.SEQUENCEFILE_SERDE, StorageConstants.DEFAULT_TEXT_SERDE);
-      options.set(StorageConstants.SEQUENCEFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    } else if (dataFormat.equalsIgnoreCase("PARQUET")) {
+      options.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    } else if (dataFormat.equalsIgnoreCase(BuiltinStorages.PARQUET)) {
       options.set(BLOCK_SIZE, StorageConstants.PARQUET_DEFAULT_BLOCK_SIZE);
       options.set(PAGE_SIZE, StorageConstants.PARQUET_DEFAULT_PAGE_SIZE);
       options.set(COMPRESSION, StorageConstants.PARQUET_DEFAULT_COMPRESSION_CODEC_NAME);

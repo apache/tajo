@@ -112,6 +112,8 @@ public class ErrorMessages {
     ADD_MESSAGE(UNSUPPORTED_DATATYPE, "unsupported data type: '%s'", 1);
     ADD_MESSAGE(INVALID_TABLE_PROPERTY, "invalid table property '%s': '%s'", 2);
     ADD_MESSAGE(MISSING_TABLE_PROPERTY, "table property '%s' required for '%s'", 2);
+    ADD_MESSAGE(INVALID_TABLESPACE_URI, "Invalid tablespace '%s' for table '%s'", 2);
+    ADD_MESSAGE(UNREMOVABLE_TABLE_PROPERTY, "Removing following properties is disabled: %s", 1);
 
     ADD_MESSAGE(AMBIGUOUS_PARTITION_DIRECTORY, "There is a directory which is assumed to be a partitioned directory" +
       " : '%s'", 1);

@@ -37,7 +37,7 @@ public class ExecutionBlock {
   // Actual ScanNode's ExecutionBlockId -> Delegated ScanNode's ExecutionBlockId.
   private Map<ExecutionBlockId, ExecutionBlockId> unionScanMap = new HashMap<>();
 
-  private Map<String, ScanNode> broadcastRelations = new HashMap<>();
+  private Map<String, ScanNode> broadcastRelations = new HashMap<>(); // map of table name and corresponding scan node
 
   private PlanContext planContext;
 

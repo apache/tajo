@@ -21,6 +21,7 @@ package org.apache.tajo;
 public class BuiltinStorages {
   public static final String TEXT = "TEXT";
   public static final String JSON = "JSON";
+  public static final String REGEX = "REGEX";
   public static final String RAW = "RAW";
   public static final String DRAW = "DRAW";
   public static final String RCFILE = "RCFILE";
@@ -30,4 +31,7 @@ public class BuiltinStorages {
   public static final String SEQUENCE_FILE = "SEQUENCEFILE";
   public static final String AVRO = "AVRO";
   public static final String HBASE = "HBASE";
+  public static final String SYSTEM = "SYSTEM";
+  public static final String EX_HTTP_JSON = "EX_HTTP_JSON";
+  public static final String KAFKA = "KAFKA";
 }
