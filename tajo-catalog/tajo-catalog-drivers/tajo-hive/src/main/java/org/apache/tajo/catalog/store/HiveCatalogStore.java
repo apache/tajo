@@ -19,6 +19,7 @@
 package org.apache.tajo.catalog.store;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -817,10 +818,18 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
     try {
       client = clientPool.getClient();
       Table table = client.getHiveClient().getTable(databaseName, tableName);
-      for (String propertyKey : ProtoUtil.convertStrings(propertyKeys)) {
-        table.getParameters().remove(propertyKey);
+
+      Set<String> keys = Sets.newHashSet(propertyKeys.getValuesList());
+      Set<String> violations = Sets.intersection(keys, UNREMOVABLE_PROPERTY_SET);
+
+      if (!violations.isEmpty()) {
+        throw new UnremovableTablePropertyException(violations.toArray(new String[0]));
+      } else {
+        for (String key : keys) {
+          table.getParameters().remove(key);
+        }
+        client.getHiveClient().alter_table(databaseName, tableName, table);
       }
-      client.getHiveClient().alter_table(databaseName, tableName, table);
     } catch (NoSuchObjectException nsoe) {
     } catch (Exception e) {
       throw new TajoInternalError(e);

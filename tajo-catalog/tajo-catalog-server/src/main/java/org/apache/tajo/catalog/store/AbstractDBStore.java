@@ -64,7 +64,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   protected final String connectionPassword;
   protected final String catalogUri;
 
-  protected final Set<String> unremovablePropertySet = Sets.newHashSet("timezone");
   protected final String insertPartitionSql = "INSERT INTO " + TB_PARTTIONS
     + "(" + COL_TABLES_PK + ", PARTITION_NAME, PATH, " + COL_PARTITION_BYTES
     + ") VALUES (?, ? , ?, ?)";
@@ -1121,7 +1120,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     PreparedStatement pstmt = null;
 
     Set<String> keys = Sets.newHashSet(propertyKeys.getValuesList());
-    Set<String> violations = Sets.intersection(keys, unremovablePropertySet);
+    Set<String> violations = Sets.intersection(keys, UNREMOVABLE_PROPERTY_SET);
 
     if (!violations.isEmpty()) {
       throw new UnremovableTablePropertyException(violations.toArray(new String[0]));
