@@ -212,29 +212,14 @@ public class MongoDBTableSpace extends Tablespace {
     return URI.create(this.getUri() + "&" + CONFIG_KEY_TABLE + "=" + tableName);
   }
 
-//    @Override
-//    public URI getTableUri(String databaseName, String tableName) {
-//        //ToDo set the TableURI properly
-//        return URI.create(this.getUri()+"&table="+tableName);
-//    }
-
-
   // Metadata
   public MetadataProvider getMetadataProvider() {
     return new MongoDBMetadataProvider(this, mappedDBName);
   }
 
+  //Return Connection info for the tablespace
   public ConnectionInfo getConnectionInfo() {
     return connectionInfo;
   }
 
-
-  //ToDo Make Sure this is not an issue
-  @Override
-  public Appender getAppender(OverridableConf queryContext,
-                              TaskAttemptId taskAttemptId, TableMeta meta, Schema schema, Path workDir)
-
-  {
-    return new MongoDBAppender(null, taskAttemptId, schema, meta, workDir, workDir.toUri());
-  }
 }

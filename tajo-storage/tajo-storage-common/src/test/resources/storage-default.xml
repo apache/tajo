@@ -197,11 +197,6 @@
     <value>org.apache.tajo.storage.hbase.HFileAppender</value>
   </property>
 
-  <property>
-    <name>tajo.storage.appender-handler.mongodb.class</name>
-    <value>org.apache.tajo.storage.mongodb.MongoDBAppender</value>
-  </property>
-
   <!--- Storage buffer -->
   <property>
     <name>tajo.storage.text.io.read-buffer.bytes</name>
