@@ -25,7 +25,6 @@ option java_generate_equals_and_hash = true;
 import "DataTypes.proto";
 import "PrimitiveProtos.proto";
 
-
 enum OrderType {
   ORDER_NONE = 0;
   ASC = 1;
