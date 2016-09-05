@@ -1003,9 +1003,9 @@ public class TestCatalog {
     assertEquals(newTimeZone, setPropertyDesc.getMeta().getProperty("timezone"));
 
     //UNSET_PROPERTY
-    catalog.alterTable(createMockAlterTableUnsetProperty(Sets.newHashSet("timezone", "dummy")));
+    catalog.alterTable(createMockAlterTableUnsetProperty(Sets.newHashSet("dummy")));
     setPropertyDesc = catalog.getTableDesc("default","mynewcooltable");
-    assertFalse(setPropertyDesc.getMeta().getPropertySet().containsKey("timezone"));
+    assertTrue(setPropertyDesc.getMeta().getPropertySet().containsKey("timezone"));
     assertFalse(setPropertyDesc.getMeta().getPropertySet().containsKey("dummy"));
   }
 

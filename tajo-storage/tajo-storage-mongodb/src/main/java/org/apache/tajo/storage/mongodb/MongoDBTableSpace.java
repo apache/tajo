@@ -223,5 +223,4 @@ public class MongoDBTableSpace extends Tablespace {
   public ConnectionInfo getConnectionInfo() {
     return connectionInfo;
   }
-
 }

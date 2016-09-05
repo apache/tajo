@@ -39,7 +39,7 @@
   <!--- Registered Scanner Handler -->
   <property>
     <name>tajo.storage.scanner-handler</name>
-    <value>text,json,raw,draw,rcfile,row,parquet,orc,sequencefile,avro,hbase,mongodb,ex_http_json</value>
+    <value>text,json,regex,raw,draw,rcfile,row,parquet,orc,sequencefile,avro,hbase,mongodb,ex_http_json,kafka</value>
   </property>
 
   <!--- Fragment Class Configurations -->
@@ -64,6 +64,10 @@
     <value>org.apache.tajo.storage.http.ExampleHttpFileFragment</value>
   </property>
   <property>
+    <name>tajo.storage.fragment.kind.kafka</name>
+    <value>org.apache.tajo.storage.kafka.KafkaFragment</value>
+  </property>
+  <property>
     <name>tajo.storage.fragment.serde.file</name>
     <value>org.apache.tajo.storage.fragment.FileFragmentSerde</value>
   </property>
@@ -83,6 +87,10 @@
     <name>tajo.storage.fragment.serde.example-http</name>
     <value>org.apache.tajo.storage.http.ExampleHttpFileFragmentSerde</value>
   </property>
+  <property>
+    <name>tajo.storage.fragment.serde.kafka</name>
+    <value>org.apache.tajo.storage.kafka.KafkaFragmentSerde</value>
+  </property>
 
   <!--- Scanner Handler -->
   <property>
@@ -92,6 +100,11 @@
 
   <property>
     <name>tajo.storage.scanner-handler.json.class</name>
+    <value>org.apache.tajo.storage.text.DelimitedTextFile$DelimitedTextFileScanner</value>
+  </property>
+
+  <property>
+    <name>tajo.storage.scanner-handler.regex.class</name>
     <value>org.apache.tajo.storage.text.DelimitedTextFile$DelimitedTextFileScanner</value>
   </property>
 
@@ -148,10 +161,15 @@
     <value>org.apache.tajo.storage.http.ExampleHttpJsonScanner</value>
   </property>
 
+  <property>
+    <name>tajo.storage.scanner-handler.kafka.class</name>
+    <value>org.apache.tajo.storage.kafka.KafkaScanner</value>
+  </property>
+
   <!--- Appender Handler -->
   <property>
     <name>tajo.storage.appender-handler</name>
-    <value>text,raw,rcfile,row,parquet,orc,sequencefile,avro,hbase</value>
+    <value>text,json,regex,raw,draw,rcfile,row,parquet,orc,sequencefile,avro,hbase</value>
   </property>
 
   <property>
@@ -161,6 +179,11 @@
 
   <property>
     <name>tajo.storage.appender-handler.json.class</name>
+    <value>org.apache.tajo.storage.text.DelimitedTextFile$DelimitedTextFileAppender</value>
+  </property>
+
+  <property>
+    <name>tajo.storage.appender-handler.regex.class</name>
     <value>org.apache.tajo.storage.text.DelimitedTextFile$DelimitedTextFileAppender</value>
   </property>
 
