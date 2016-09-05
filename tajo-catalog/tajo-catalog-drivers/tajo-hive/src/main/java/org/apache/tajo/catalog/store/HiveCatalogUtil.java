@@ -26,6 +26,7 @@ import org.apache.hadoop.hive.ql.io.orc.OrcSerde;
 import org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.serde.serdeConstants;
+import org.apache.hadoop.hive.serde2.RegexSerDe;
 import org.apache.hadoop.hive.serde2.avro.AvroSerDe;
 import org.apache.hadoop.hive.serde2.columnar.ColumnarSerDe;
 import org.apache.hadoop.hive.serde2.columnar.LazyBinaryColumnarSerDe;
@@ -142,6 +143,8 @@ public class HiveCatalogUtil {
       return BuiltinStorages.AVRO;
     } else if (OrcSerde.class.getName().equals(serde)) {
       return BuiltinStorages.ORC;
+    } else if (RegexSerDe.class.getName().equals(serde)) {
+      return BuiltinStorages.REGEX;
     } else {
       throw new TajoRuntimeException(new UnknownDataFormatException(inputFormat));
     }

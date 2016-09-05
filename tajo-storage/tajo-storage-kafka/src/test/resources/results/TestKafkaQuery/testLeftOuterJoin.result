@@ -1,0 +1,11 @@
+id,name,id,prod_name,point
+-------------------------------
+1,user1,1,abc,0.2
+1,user1,1,abc,0.2
+2,user2,2,def,0.4
+2,user2,2,def,0.4
+3,user3,3,ghi,0.6
+3,user3,3,ghi,0.6
+4,user4,4,jkl,0.8
+4,user4,4,jkl,0.8
+6,user6,null,null,null

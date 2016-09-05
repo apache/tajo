@@ -71,7 +71,8 @@ public interface CatalogStore extends Closeable {
 
   void alterTable(CatalogProtos.AlterTableDescProto alterTableDescProto) throws UndefinedDatabaseException,
       DuplicateTableException, DuplicateColumnException, DuplicatePartitionException, UndefinedPartitionException,
-      UndefinedTableException, UndefinedColumnException, UndefinedPartitionMethodException, AmbiguousTableException;
+      UndefinedTableException, UndefinedColumnException, UndefinedPartitionMethodException, AmbiguousTableException,
+      UnremovableTablePropertyException;
 
   List<TableDescriptorProto> getAllTables();
 

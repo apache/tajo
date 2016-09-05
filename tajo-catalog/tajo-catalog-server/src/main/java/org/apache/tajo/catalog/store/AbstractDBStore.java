@@ -21,7 +21,9 @@
  */
 package org.apache.tajo.catalog.store;
 
+import com.google.common.collect.Sets;
 import com.google.protobuf.InvalidProtocolBufferException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -978,7 +980,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   public void alterTable(CatalogProtos.AlterTableDescProto alterTableDescProto)
       throws UndefinedDatabaseException, DuplicateTableException, DuplicateColumnException,
       DuplicatePartitionException, UndefinedPartitionException, UndefinedColumnException, UndefinedTableException,
-      UndefinedPartitionMethodException, AmbiguousTableException {
+      UndefinedPartitionMethodException, AmbiguousTableException, UnremovableTablePropertyException {
 
     String[] splitted = IdentifierUtil.splitTableName(alterTableDescProto.getTableName());
     if (splitted.length == 1) {
@@ -1110,11 +1112,19 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
   }
 
-  private void unsetProperties(final int tableId, final PrimitiveProtos.StringListProto propertyKeys) {
+  private void unsetProperties(final int tableId, final PrimitiveProtos.StringListProto propertyKeys)
+      throws UnremovableTablePropertyException {
     final String deleteSql = "DELETE FROM " + TB_OPTIONS + " WHERE TID=? AND KEY_=?";
 
     Connection conn;
     PreparedStatement pstmt = null;
+
+    Set<String> keys = Sets.newHashSet(propertyKeys.getValuesList());
+    Set<String> violations = Sets.intersection(keys, UNREMOVABLE_PROPERTY_SET);
+
+    if (!violations.isEmpty()) {
+      throw new UnremovableTablePropertyException(violations.toArray(new String[0]));
+    }
 
     Map<String, String> oldProperties = getTableOptions(tableId);
 

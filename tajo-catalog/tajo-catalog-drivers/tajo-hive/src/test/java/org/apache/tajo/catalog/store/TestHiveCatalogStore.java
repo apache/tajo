@@ -19,6 +19,9 @@
 package org.apache.tajo.catalog.store;
 
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
+
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -28,6 +31,8 @@ import org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat;
 import org.apache.hadoop.hive.ql.io.IOConstants;
 import org.apache.hadoop.hive.ql.io.StorageFormatDescriptor;
 import org.apache.hadoop.hive.ql.io.StorageFormatFactory;
+import org.apache.hadoop.hive.serde2.RegexSerDe;
+import org.apache.hadoop.mapred.TextInputFormat;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionDesc;
@@ -49,6 +54,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 
@@ -129,6 +136,30 @@ public class TestHiveCatalogStore {
 
     assertEquals(StringEscapeUtils.escapeJava(StorageConstants.DEFAULT_FIELD_DELIMITER),
         table1.getMeta().getProperty(StorageConstants.TEXT_DELIMITER));
+
+    Map<String, String> expected = getProperties(DB_NAME, CUSTOMER);
+    Map<String, String> toSet = new ImmutableMap.Builder<String, String>()
+        .put("key1", "value1")
+        .put("key2", "value2")
+        .build();
+    expected.putAll(toSet);
+
+    setProperty(DB_NAME, CUSTOMER, toSet);
+    Map<String, String> actual = getProperties(DB_NAME, CUSTOMER);
+    assertEquals(actual.get(StorageConstants.TEXT_DELIMITER), expected.get(StorageConstants.TEXT_DELIMITER));
+    assertEquals(actual.get("key1"), expected.get("key1"));
+    assertEquals(actual.get("key2"), expected.get("key2"));
+
+    Set<String> toUnset = Sets.newHashSet("key2", "key3");
+    for (String key : toUnset) {
+      expected.remove(key);
+    }
+    unSetProperty(DB_NAME, CUSTOMER, toUnset);
+    actual = getProperties(DB_NAME, CUSTOMER);
+    assertEquals(actual.get(StorageConstants.TEXT_DELIMITER), expected.get(StorageConstants.TEXT_DELIMITER));
+    assertEquals(actual.get("key1"), expected.get("key1"));
+    assertNull(actual.get("key2"));
+
     store.dropTable(DB_NAME, CUSTOMER);
   }
 
@@ -164,6 +195,30 @@ public class TestHiveCatalogStore {
 
     assertEquals(StorageConstants.DEFAULT_BINARY_SERDE,
         table1.getMeta().getProperty(StorageConstants.RCFILE_SERDE));
+
+    Map<String, String> expected = getProperties(DB_NAME, REGION);
+    Map<String, String> toSet = new ImmutableMap.Builder<String, String>()
+        .put("key1", "value1")
+        .put("key2", "value2")
+        .build();
+    expected.putAll(toSet);
+
+    setProperty(DB_NAME, REGION, toSet);
+    Map<String, String> actual = getProperties(DB_NAME, REGION);
+    assertEquals(actual.get(StorageConstants.TEXT_DELIMITER), expected.get(StorageConstants.TEXT_DELIMITER));
+    assertEquals(actual.get("key1"), expected.get("key1"));
+    assertEquals(actual.get("key2"), expected.get("key2"));
+
+    Set<String> toUnset = Sets.newHashSet("key2", "key3");
+    for (String key : toUnset) {
+      expected.remove(key);
+    }
+    unSetProperty(DB_NAME, REGION, toUnset);
+    actual = getProperties(DB_NAME, REGION);
+    assertEquals(actual.get(StorageConstants.TEXT_DELIMITER), expected.get(StorageConstants.TEXT_DELIMITER));
+    assertEquals(actual.get("key1"), expected.get("key1"));
+    assertNull(actual.get("key2"));
+
     store.dropTable(DB_NAME, REGION);
   }
 
@@ -198,6 +253,30 @@ public class TestHiveCatalogStore {
     }
 
     assertEquals(StorageConstants.DEFAULT_TEXT_SERDE, table1.getMeta().getProperty(StorageConstants.RCFILE_SERDE));
+
+    Map<String, String> expected = getProperties(DB_NAME, REGION);
+    Map<String, String> toSet = new ImmutableMap.Builder<String, String>()
+            .put("key1", "value1")
+            .put("key2", "value2")
+            .build();
+    expected.putAll(toSet);
+
+    setProperty(DB_NAME, REGION, toSet);
+    Map<String, String> actual = getProperties(DB_NAME, REGION);
+    assertEquals(actual.get(StorageConstants.TEXT_DELIMITER), expected.get(StorageConstants.TEXT_DELIMITER));
+    assertEquals(actual.get("key1"), expected.get("key1"));
+    assertEquals(actual.get("key2"), expected.get("key2"));
+
+    Set<String> toUnset = Sets.newHashSet("key2", "key3");
+    for (String key : toUnset) {
+      expected.remove(key);
+    }
+    unSetProperty(DB_NAME, REGION, toUnset);
+    actual = getProperties(DB_NAME, REGION);
+    assertEquals(actual.get(StorageConstants.TEXT_DELIMITER), expected.get(StorageConstants.TEXT_DELIMITER));
+    assertEquals(actual.get("key1"), expected.get("key1"));
+    assertNull(actual.get("key2"));
+
     store.dropTable(DB_NAME, REGION);
   }
 
@@ -249,6 +328,29 @@ public class TestHiveCatalogStore {
 
     assertEquals(table1.getMeta().getProperty(StorageConstants.TEXT_NULL),
         StringEscapeUtils.escapeJava("\u0003"));
+
+    Map<String, String> expected = getProperties(DB_NAME, SUPPLIER);
+    Map<String, String> toSet = new ImmutableMap.Builder<String, String>()
+            .put("key1", "value1")
+            .put("key2", "value2")
+            .build();
+    expected.putAll(toSet);
+
+    setProperty(DB_NAME, SUPPLIER, toSet);
+    Map<String, String> actual = getProperties(DB_NAME, SUPPLIER);
+    assertEquals(actual.get(StorageConstants.TEXT_DELIMITER), expected.get(StorageConstants.TEXT_DELIMITER));
+    assertEquals(actual.get("key1"), expected.get("key1"));
+    assertEquals(actual.get("key2"), expected.get("key2"));
+
+    Set<String> toUnset = Sets.newHashSet("key2", "key3");
+    for (String key : toUnset) {
+      expected.remove(key);
+    }
+    unSetProperty(DB_NAME, SUPPLIER, toUnset);
+    actual = getProperties(DB_NAME, SUPPLIER);
+    assertEquals(actual.get(StorageConstants.TEXT_DELIMITER), expected.get(StorageConstants.TEXT_DELIMITER));
+    assertEquals(actual.get("key1"), expected.get("key1"));
+    assertNull(actual.get("key2"));
 
     store.dropTable(DB_NAME, SUPPLIER);
 
@@ -505,6 +607,30 @@ public class TestHiveCatalogStore {
     store.alterTable(alterTableDesc.getProto());
   }
 
+  private Map<String, String> getProperties(String dbName, String tableName) throws Exception {
+    TableDesc tableDesc = new TableDesc(store.getTable(dbName, tableName));
+    TableMeta tableMeta = tableDesc.getMeta();
+    return tableMeta.toMap();
+  }
+
+  private void setProperty(String dbName, String tableName, Map<String, String> properties) throws Exception {
+    AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName(dbName + "." + tableName);
+    alterTableDesc.setAlterTableType(AlterTableType.SET_PROPERTY);
+    alterTableDesc.setProperties(new KeyValueSet(properties));
+
+    store.alterTable(alterTableDesc.getProto());
+  }
+
+  private void unSetProperty(String dbName, String tableName, Set<String> propertyKeys) throws Exception {
+    AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName(dbName + "." + tableName);
+    alterTableDesc.setAlterTableType(AlterTableType.UNSET_PROPERTY);
+    alterTableDesc.setUnsetPropertyKey(propertyKeys);
+
+    store.alterTable(alterTableDesc.getProto());
+  }
+
   @Test
   public void testGetAllTableNames() throws Exception{
     TableMeta meta = new TableMeta(BuiltinStorages.TEXT, new KeyValueSet());
@@ -704,5 +830,36 @@ public class TestHiveCatalogStore {
     assertEquals(StringEscapeUtils.escapeJava(StorageConstants.DEFAULT_FIELD_DELIMITER),
       table1.getMeta().getProperty(StorageConstants.TEXT_DELIMITER));
     store.dropTable(DB_NAME, tableName);
+  }
+
+  @Test
+  public void testTableUsingRegex() throws Exception {
+    TableMeta meta = new TableMeta(BuiltinStorages.REGEX, new KeyValueSet());
+    meta.putProperty(StorageConstants.TEXT_REGEX, "([^ ]*)");
+    meta.putProperty(StorageConstants.TEXT_REGEX_OUTPUT_FORMAT_STRING, "%1$s");
+
+    org.apache.tajo.catalog.Schema schema = SchemaBuilder.builder()
+        .add("c_custkey", TajoDataTypes.Type.TEXT)
+        .build();
+
+    TableDesc table = new TableDesc(IdentifierUtil.buildFQName(DB_NAME, CUSTOMER), schema, meta,
+        new Path(warehousePath, new Path(DB_NAME, CUSTOMER)).toUri());
+    store.createTable(table.getProto());
+    assertTrue(store.existTable(DB_NAME, CUSTOMER));
+
+    org.apache.hadoop.hive.ql.metadata.Table hiveTable = store.getHiveTable(DB_NAME, CUSTOMER);
+    assertEquals(TextInputFormat.class.getName(), hiveTable.getSd().getInputFormat());
+    assertEquals(HiveIgnoreKeyTextOutputFormat.class.getName(), hiveTable.getSd().getOutputFormat());
+    assertEquals(RegexSerDe.class.getName(), hiveTable.getSerializationLib());
+
+    TableDesc table1 = new TableDesc(store.getTable(DB_NAME, CUSTOMER));
+    assertEquals(table.getName(), table1.getName());
+    assertEquals(table.getUri(), table1.getUri());
+    assertEquals(table.getSchema().size(), table1.getSchema().size());
+    for (int i = 0; i < table.getSchema().size(); i++) {
+      assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
+    }
+
+    store.dropTable(DB_NAME, CUSTOMER);
   }
 }

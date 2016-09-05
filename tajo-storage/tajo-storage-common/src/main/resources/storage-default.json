@@ -35,6 +35,10 @@
     "mongodb": {
       "handler": "org.apache.tajo.storage.mongodb.MongoDBTableSpace",
       "default-format": "text"
+    },
+    "kafka": {
+      "handler": "org.apache.tajo.storage.kafka.KafkaTablespace",
+      "default-format": "kafka"
     }
   }
 }
