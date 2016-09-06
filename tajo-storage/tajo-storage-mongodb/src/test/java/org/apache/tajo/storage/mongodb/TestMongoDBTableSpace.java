@@ -70,8 +70,6 @@ public class TestMongoDBTableSpace {
     space.createTable(null, false);
   }
 
-
-  //Todo delete only metadat is provide
   @Test(timeout = 1000)
   public void testCreateTable_and_Purg() throws IOException, TajoException {
     Tablespace space = TablespaceManager.getByName(server.SPACE_NAME);
@@ -102,7 +100,7 @@ public class TestMongoDBTableSpace {
       }
       assertTrue(foundInMongoDB);
 
-      //Purg the table
+      //Purg the table and check whether it exists
       space.purgeTable(tableDesc);
       final Set<String> found_after = Sets.newHashSet(space.getMetadataProvider().getTables(null, null));
       assertFalse(found_after.contains("Table1"));
@@ -116,11 +114,9 @@ public class TestMongoDBTableSpace {
     Map<String, Integer> tableSizes = new HashMap<String, Integer>();
     tableSizes.put("github", 4);
     tableSizes.put("got", 5);
+
+    //Check whether the volumes of tables are correct
     for (String tbl : server.collectionNames) {
-
-      // assertEquals(1,space.getTableVolume(tableDesc, Optional.empty()));
-
-      //  long a = 1;b
       TableDesc tbDesc = new TableDesc(
               IdentifierUtil.buildFQName(server.MAPPEDDBNAME, tbl),
               SchemaBuilder.builder()

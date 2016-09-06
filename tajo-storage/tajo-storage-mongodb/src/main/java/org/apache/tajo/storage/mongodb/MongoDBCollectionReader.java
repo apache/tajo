@@ -56,9 +56,8 @@ public class MongoDBCollectionReader {
     MongoDatabase db = mongoClient.getDatabase(connectionInfo.getDbName());
 
     MongoCollection<Document> collection = db.getCollection(connectionInfo.getTableName());
-    documentList = (List<Document>) collection.find().into(
-            new ArrayList<Document>());
-    ;
+    documentList = collection.find().into(
+            new ArrayList<>());
 
     deserializer.init();
   }

@@ -35,13 +35,11 @@ public class TestMongoDBQueryTest extends QueryTestCaseBase {
   @BeforeClass
   public static void setup() throws Exception {
     QueryTestCaseBase.testingCluster.getMaster().refresh();
-    //  TablespaceManager.addTableSpaceForTest(new ExampleHttpFileTablespace("http_example", uri, configElements));
-
-  }
+   }
 
   @AfterClass
   public static void tearDownClass() throws Exception {
-    //   server.stop();
+       server.stop();
   }
 
   @Before
@@ -90,7 +88,8 @@ public class TestMongoDBQueryTest extends QueryTestCaseBase {
   @SimpleTest
   @Test
   public void testInsert() throws Exception {
-//        runSimpleTests();
+    //Todo Enable when insert is supported for Metadata provided tableSpaces.
+      //runSimpleTests();
   }
 
   @SimpleTest

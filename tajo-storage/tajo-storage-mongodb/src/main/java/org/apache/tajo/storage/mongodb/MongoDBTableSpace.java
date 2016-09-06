@@ -106,7 +106,6 @@ public class MongoDBTableSpace extends Tablespace {
 
   @Override
   public long getTableVolume(TableDesc table, Optional<EvalNode> filter) {
-
     long count = 0;
     try {
       String[] nameSplited = IdentifierUtil.splitFQTableName(table.getName());
@@ -156,9 +155,6 @@ public class MongoDBTableSpace extends Tablespace {
     if (tableDesc == null)
       throw new TajoRuntimeException(new NotImplementedException());
     MongoCollection<Document> table = db.getCollection(tableDesc.getName());
-
-    //TODO Handle this here. If empty throw exception or what?
-    boolean ifExist = (table.count() > 0) ? true : false;
 
     //If meta  data provides. Create a table
     if (STORAGE_PROPERTY.isMetadataProvided())

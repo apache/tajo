@@ -252,14 +252,11 @@
                 </exclusion>
             </exclusions>
         </dependency>
-
-        <!--Mongo Java Driver-->
         <dependency>
             <groupId>org.mongodb</groupId>
             <artifactId>mongo-java-driver</artifactId>
             <version>3.3.0</version>
         </dependency>
-        <!--For testing server-->
         <dependency>
             <groupId>de.flapdoodle.embed</groupId>
             <artifactId>de.flapdoodle.embed.mongo</artifactId>

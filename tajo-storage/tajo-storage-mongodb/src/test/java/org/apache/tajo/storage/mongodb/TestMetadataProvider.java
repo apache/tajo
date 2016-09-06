@@ -49,7 +49,6 @@ public class TestMetadataProvider {
 
   @Test
   public void testGetDatabaseName() throws Exception {
-    //
     Tablespace tablespace = TablespaceManager.get(server.getURI());
     MetadataProvider provider = tablespace.getMetadataProvider();
     assertEquals(MongoDBTestServer.MAPPEDDBNAME, provider.getDatabaseName());
@@ -84,11 +83,7 @@ public class TestMetadataProvider {
       TableDesc table = provider.getTableDesc(null, tableName);
       assertEquals(server.MAPPEDDBNAME + "." + tableName, table.getName());
       assertEquals(server.getURI() + "?table=" + tableName, table.getUri().toASCIIString());
-
-      //ToDo Check the stats
     }
-
-
   }
 
 

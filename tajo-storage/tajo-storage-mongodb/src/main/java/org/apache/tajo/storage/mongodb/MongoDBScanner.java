@@ -47,7 +47,7 @@ public class MongoDBScanner implements Scanner {
   private MongoDBCollectionReader collectionReader;
   private Column[] targets;
 
-  private boolean inited;
+  private boolean inited = false;
 
   public MongoDBScanner(Configuration conf, Schema schema, TableMeta meta, Fragment fragment) {
     this.schema = schema;
@@ -60,7 +60,7 @@ public class MongoDBScanner implements Scanner {
     if (targets == null) {
       targets = schema.toArray();
     }
-
+    inited = true;
     reset();
   }
 
