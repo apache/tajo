@@ -805,162 +805,35 @@ public class FileTablespace extends Tablespace {
   protected Path commitOutputData(OverridableConf queryContext, boolean changeFileSeq) throws IOException {
     Path stagingDir = new Path(queryContext.get(QueryVars.STAGING_DIR));
     Path stagingResultDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
-    Path finalOutputDir;
+
+    Path finalOutputDir = null;
     if (!queryContext.get(QueryVars.OUTPUT_TABLE_URI, "").isEmpty()) {
       finalOutputDir = new Path(queryContext.get(QueryVars.OUTPUT_TABLE_URI));
+
+      boolean hasPartition = !queryContext.get(QueryVars.OUTPUT_PARTITIONS, "").isEmpty() ? true : false;
+
       try {
-        FileSystem fs = stagingResultDir.getFileSystem(conf);
-
         if (queryContext.getBool(QueryVars.OUTPUT_OVERWRITE, false)) { // INSERT OVERWRITE INTO
-
-          // It moves the original table into the temporary location.
-          // Then it moves the new result table into the original table location.
-          // Upon failed, it recovers the original table if possible.
-          boolean movedToOldTable = false;
-          boolean committed = false;
           Path oldTableDir = new Path(stagingDir, TajoConstants.INSERT_OVERWIRTE_OLD_TABLE_NAME);
-          ContentSummary summary = fs.getContentSummary(stagingResultDir);
 
           // When inserting empty data into a partitioned table, check if keep existing data need to be remove or not.
           boolean overwriteEnabled = queryContext.getBool(SessionVars.PARTITION_NO_RESULT_OVERWRITE_ENABLED);
-
-          // If existing data doesn't need to keep, check if there are some files.
-          if ( (!queryContext.get(QueryVars.OUTPUT_PARTITIONS, "").isEmpty())
-            && (!overwriteEnabled || (overwriteEnabled && summary.getFileCount() > 0L))) {
-            // This is a map for existing non-leaf directory to rename. A key is current directory and a value is
-            // renaming directory.
-            Map<Path, Path> renameDirs = new HashMap<>();
-            // This is a map for recovering existing partition directory. A key is current directory and a value is
-            // temporary directory to back up.
-            Map<Path, Path> recoveryDirs = new HashMap<>();
-
-            try {
-              if (!fs.exists(finalOutputDir)) {
-                fs.mkdirs(finalOutputDir);
-              }
-
-              visitPartitionedDirectory(fs, stagingResultDir, finalOutputDir, stagingResultDir.toString(),
-                  renameDirs, oldTableDir);
-
-              // Rename target partition directories
-              for(Map.Entry<Path, Path> entry : renameDirs.entrySet()) {
-                // Backup existing data files for recovering
-                if (fs.exists(entry.getValue())) {
-                  String recoveryPathString = entry.getValue().toString().replaceAll(finalOutputDir.toString(),
-                      oldTableDir.toString());
-                  Path recoveryPath = new Path(recoveryPathString);
-                  fs.rename(entry.getValue(), recoveryPath);
-                  fs.exists(recoveryPath);
-                  recoveryDirs.put(entry.getValue(), recoveryPath);
-                }
-                // Delete existing directory
-                fs.delete(entry.getValue(), true);
-                // Rename staging directory to final output directory
-                fs.rename(entry.getKey(), entry.getValue());
-              }
-
-            } catch (IOException ioe) {
-              // Remove created dirs
-              for(Map.Entry<Path, Path> entry : renameDirs.entrySet()) {
-                fs.delete(entry.getValue(), true);
-              }
-
-              // Recovery renamed dirs
-              for(Map.Entry<Path, Path> entry : recoveryDirs.entrySet()) {
-                fs.delete(entry.getValue(), true);
-                fs.rename(entry.getValue(), entry.getKey());
-              }
-
-              throw new IOException(ioe.getMessage());
-            }
-          } else { // no partition
-            try {
-
-              // if the final output dir exists, move all contents to the temporary table dir.
-              // Otherwise, just make the final output dir. As a result, the final output dir will be empty.
-              if (fs.exists(finalOutputDir)) {
-                fs.mkdirs(oldTableDir);
-
-                for (FileStatus status : fs.listStatus(finalOutputDir, hiddenFileFilter)) {
-                  fs.rename(status.getPath(), oldTableDir);
-                }
-
-                movedToOldTable = fs.exists(oldTableDir);
-              } else { // if the parent does not exist, make its parent directory.
-                fs.mkdirs(finalOutputDir);
-              }
-
-              // Move the results to the final output dir.
-              for (FileStatus status : fs.listStatus(stagingResultDir)) {
-                fs.rename(status.getPath(), finalOutputDir);
-              }
-
-              // Check the final output dir
-              committed = fs.exists(finalOutputDir);
-
-            } catch (IOException ioe) {
-              // recover the old table
-              if (movedToOldTable && !committed) {
-
-                // if commit is failed, recover the old data
-                for (FileStatus status : fs.listStatus(finalOutputDir, hiddenFileFilter)) {
-                  fs.delete(status.getPath(), true);
-                }
-
-                for (FileStatus status : fs.listStatus(oldTableDir)) {
-                  fs.rename(status.getPath(), finalOutputDir);
-                }
-              }
-
-              throw new IOException(ioe.getMessage());
-            }
+          if (hasPartition && !overwriteEnabled) {
+            commitInsertOverwriteWihProtectivePartition(stagingResultDir, finalOutputDir, oldTableDir);
+          } else { 
+            commitInsertOverwrite(stagingResultDir, finalOutputDir, oldTableDir);
           }
         } else {
           String queryType = queryContext.get(QueryVars.COMMAND_TYPE);
-
-          if (queryType != null && queryType.equals(NodeType.INSERT.name())) { // INSERT INTO an existing table
-
-            NumberFormat fmt = NumberFormat.getInstance();
-            fmt.setGroupingUsed(false);
-            fmt.setMinimumIntegerDigits(3);
-
-            if (!queryContext.get(QueryVars.OUTPUT_PARTITIONS, "").isEmpty()) {
-              for(FileStatus eachFile: fs.listStatus(stagingResultDir)) {
-                if (eachFile.isFile()) {
-                  LOG.warn("Partition table can't have file in a staging dir: " + eachFile.getPath());
-                  continue;
-                }
-                moveResultFromStageToFinal(fs, stagingResultDir, eachFile, finalOutputDir, fmt, -1, changeFileSeq);
-              }
-            } else {
-              int maxSeq = StorageUtil.getMaxFileSequence(fs, finalOutputDir, false) + 1;
-              for(FileStatus eachFile: fs.listStatus(stagingResultDir)) {
-                if (eachFile.getPath().getName().startsWith("_")) {
-                  continue;
-                }
-                moveResultFromStageToFinal(fs, stagingResultDir, eachFile, finalOutputDir, fmt, maxSeq++, changeFileSeq);
-              }
-            }
-            // checking all file moved and remove empty dir
-            verifyAllFileMoved(fs, stagingResultDir);
-            FileStatus[] files = fs.listStatus(stagingResultDir);
-            if (files != null && files.length != 0) {
-              for (FileStatus eachFile: files) {
-                LOG.error("There are some unmoved files in staging dir:" + eachFile.getPath());
-              }
-            }
-          } else { // CREATE TABLE AS SELECT (CTAS)
-            if (fs.exists(finalOutputDir)) {
-              for (FileStatus status : fs.listStatus(stagingResultDir)) {
-                fs.rename(status.getPath(), finalOutputDir);
-              }
-            } else {
-              fs.rename(stagingResultDir, finalOutputDir);
-            }
-            LOG.info("Moved from the staging dir to the output directory '" + finalOutputDir);
+          Preconditions.checkNotNull(queryContext);
+          if (queryType.equals(NodeType.INSERT.name())) { // INSERT INTO an existing table
+            commitInsert(stagingResultDir, finalOutputDir, hasPartition, changeFileSeq);
+          } else if (queryType.equals(NodeType.CREATE_TABLE.name())){ // CREATE TABLE AS SELECT (CTAS)
+            commitCreate(stagingResultDir, finalOutputDir);
+          } else {
+            throw new IOException("Cannot handle query type:" + queryType);
           }
         }
-
         // remove the staging directory if the final output dir is given.
         Path stagingDirRoot = stagingDir.getParent();
         fs.delete(stagingDirRoot, true);
@@ -971,8 +844,149 @@ public class FileTablespace extends Tablespace {
     } else {
       finalOutputDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
     }
-
     return finalOutputDir;
+  }
+
+  private void commitInsertOverwriteWihProtectivePartition(Path stagingResultDir, Path finalOutputDir,
+                                                            Path oldTableDir) throws IOException {
+    // This is a map for existing non-leaf directory to rename. A key is current directory and a value is
+    // renaming directory.
+    Map<Path, Path> renameDirs = new HashMap<>();
+    // This is a map for recovering existing partition directory. A key is current directory and a value is
+    // temporary directory to back up.
+    Map<Path, Path> recoveryDirs = new HashMap<>();
+
+    try {
+      if (!fs.exists(finalOutputDir)) {
+        fs.mkdirs(finalOutputDir);
+      }
+
+      visitPartitionedDirectory(fs, stagingResultDir, finalOutputDir, stagingResultDir.toString(),
+        renameDirs, oldTableDir);
+
+      // Rename target partition directories
+      for(Map.Entry<Path, Path> entry : renameDirs.entrySet()) {
+        // Backup existing data files for recovering
+        if (fs.exists(entry.getValue())) {
+          String recoveryPathString = entry.getValue().toString().replaceAll(finalOutputDir.toString(),
+            oldTableDir.toString());
+          Path recoveryPath = new Path(recoveryPathString);
+          fs.rename(entry.getValue(), recoveryPath);
+          fs.exists(recoveryPath);
+          recoveryDirs.put(entry.getValue(), recoveryPath);
+        }
+        // Delete existing directory
+        fs.delete(entry.getValue(), true);
+        // Rename staging directory to final output directory
+        fs.rename(entry.getKey(), entry.getValue());
+      }
+
+    } catch (IOException ioe) {
+      // Remove created dirs
+      for(Map.Entry<Path, Path> entry : renameDirs.entrySet()) {
+        fs.delete(entry.getValue(), true);
+      }
+
+      // Recovery renamed dirs
+      for(Map.Entry<Path, Path> entry : recoveryDirs.entrySet()) {
+        fs.delete(entry.getValue(), true);
+        fs.rename(entry.getValue(), entry.getKey());
+      }
+
+      throw new IOException(ioe.getMessage());
+    }
+  }
+
+  private void commitInsertOverwrite(Path stagingResultDir, Path finalOutputDir, Path oldTableDir) throws IOException {
+    // It moves the original table into the temporary location.
+    // Then it moves the new result table into the original table location.
+    // Upon failed, it recovers the original table if possible.
+    boolean movedToOldTable = false;
+    boolean committed = false;
+
+    try {
+      // if the final output dir exists, move all contents to the temporary table dir.
+      // Otherwise, just make the final output dir. As a result, the final output dir will be empty.
+      if (fs.exists(finalOutputDir)) {
+        fs.mkdirs(oldTableDir);
+
+        for (FileStatus status : fs.listStatus(finalOutputDir, hiddenFileFilter)) {
+          fs.rename(status.getPath(), oldTableDir);
+        }
+
+        movedToOldTable = fs.exists(oldTableDir);
+      } else { // if the parent does not exist, make its parent directory.
+        fs.mkdirs(finalOutputDir);
+      }
+
+      // Move the results to the final output dir.
+      for (FileStatus status : fs.listStatus(stagingResultDir)) {
+        fs.rename(status.getPath(), finalOutputDir);
+      }
+
+      // Check the final output dir
+      committed = fs.exists(finalOutputDir);
+
+    } catch (IOException ioe) {
+      // recover the old table
+      if (movedToOldTable && !committed) {
+
+        // if commit is failed, recover the old data
+        for (FileStatus status : fs.listStatus(finalOutputDir, hiddenFileFilter)) {
+          fs.delete(status.getPath(), true);
+        }
+
+        for (FileStatus status : fs.listStatus(oldTableDir)) {
+          fs.rename(status.getPath(), finalOutputDir);
+        }
+      }
+
+      throw new IOException(ioe.getMessage());
+    }
+  }
+
+  private void commitInsert(Path stagingResultDir, Path finalOutputDir, boolean hasPartition, boolean changeFileSeq)
+    throws IOException {
+    NumberFormat fmt = NumberFormat.getInstance();
+    fmt.setGroupingUsed(false);
+    fmt.setMinimumIntegerDigits(3);
+
+    if (hasPartition) {
+      for(FileStatus eachFile: fs.listStatus(stagingResultDir)) {
+        if (eachFile.isFile()) {
+          LOG.warn("Partition table can't have file in a staging dir: " + eachFile.getPath());
+          continue;
+        }
+        moveResultFromStageToFinal(fs, stagingResultDir, eachFile, finalOutputDir, fmt, -1, changeFileSeq);
+      }
+    } else {
+      int maxSeq = StorageUtil.getMaxFileSequence(fs, finalOutputDir, false) + 1;
+      for(FileStatus eachFile: fs.listStatus(stagingResultDir)) {
+        if (eachFile.getPath().getName().startsWith("_")) {
+          continue;
+        }
+        moveResultFromStageToFinal(fs, stagingResultDir, eachFile, finalOutputDir, fmt, maxSeq++, changeFileSeq);
+      }
+    }
+    // checking all file moved and remove empty dir
+    verifyAllFileMoved(fs, stagingResultDir);
+    FileStatus[] files = fs.listStatus(stagingResultDir);
+    if (files != null && files.length != 0) {
+      for (FileStatus eachFile: files) {
+        LOG.error("There are some unmoved files in staging dir:" + eachFile.getPath());
+      }
+    }
+  }
+
+  private void commitCreate(Path stagingResultDir, Path finalOutputDir) throws IOException {
+    if (fs.exists(finalOutputDir)) {
+      for (FileStatus status : fs.listStatus(stagingResultDir)) {
+        fs.rename(status.getPath(), finalOutputDir);
+      }
+    } else {
+      fs.rename(stagingResultDir, finalOutputDir);
+    }
+    LOG.info("Moved from the staging dir to the output directory '" + finalOutputDir);
   }
 
   /**
