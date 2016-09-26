@@ -18,6 +18,8 @@
 
 package org.apache.tajo.client;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.SessionVars;
@@ -36,6 +38,8 @@ import java.io.IOException;
 import java.sql.ResultSet;
 
 public class TajoClientUtil {
+
+  private static final Log PROGRESS_LOG = LogFactory.getLog(TajoClientUtil.class.getName() + ".PROGRESS");
 
   /* query submit */
   public static boolean isQueryWaitingForSchedule(TajoProtos.QueryState state) {
@@ -70,6 +74,10 @@ public class TajoClientUtil {
       }
 
       status = client.getQueryStatus(queryId);
+      if (PROGRESS_LOG.isDebugEnabled()) {
+	PROGRESS_LOG.debug("Progress: " + (int) (status.getProgress() * 100.0f) + "%, response time: "
+	    + ((float) ((status.getFinishTime() - status.getSubmitTime()) / 1000.0)) + " sec");
+      }
     }
     return status;
   }
