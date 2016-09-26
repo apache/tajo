@@ -549,6 +549,20 @@ public class TestTajoCli {
     }
   }
 
+  @Test
+  public void testResultStatsOfUnionAll() throws Exception {
+    String sql = "select n_nationkey as key_, n_name as name_ from nation where n_nationkey < 3" +
+      " union all select r_regionkey as key_, r_name as name_ from region";
+
+    setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+    tajoCli.executeScript(sql);
+
+    String consoleResult = new String(out.toByteArray());
+    int position = consoleResult.indexOf("rows");
+    assertOutputResult(consoleResult.substring(0, position + 4));
+  }
+
+
   // TODO: This should be removed at TAJO-1891
   @Test
   public void testAddPartitionNotimplementedException() throws Exception {

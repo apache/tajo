@@ -536,6 +536,23 @@ public class Query implements EventHandler<QueryEvent> {
         QueryHookExecutor hookExecutor = new QueryHookExecutor(query.context.getQueryMasterContext());
         hookExecutor.execute(query.context.getQueryContext(), query, event.getExecutionBlockId(), finalOutputDir);
 
+        // Calculate result stats of Union all query
+        if (rootNode.getChild() instanceof UnionNode) {
+          boolean isDistinct = ((UnionNode) rootNode.getChild()).isDistinct();
+
+          if (!isDistinct) {
+            long totalNumRows = 0L, totalNumBytes = 0L;
+            Iterator<Stage> iterator = query.getStages().iterator();
+            while(iterator.hasNext()) {
+              Stage stage = iterator.next();
+              totalNumRows += stage.getResultStats().getNumRows();
+              totalNumBytes += stage.getResultStats().getNumBytes();
+            }
+            lastStage.getResultStats().setNumRows(totalNumRows);
+            lastStage.getResultStats().setNumBytes(totalNumBytes);
+          }
+        }
+
         // Add dynamic partitions to catalog for partition table.
         if (queryContext.hasOutputTableUri() && queryContext.hasPartition()) {
           List<PartitionDescProto> partitions = query.getPartitions();
