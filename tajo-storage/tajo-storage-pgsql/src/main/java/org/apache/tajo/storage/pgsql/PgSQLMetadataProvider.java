@@ -25,8 +25,8 @@ import java.util.Collection;
 
 public class PgSQLMetadataProvider extends JdbcMetadataProviderBase {
 
-  public PgSQLMetadataProvider(PgSQLTablespace space, String dbName) {
-    super(space, dbName);
+  public PgSQLMetadataProvider(PgSQLTablespace space, String dbName, String mappedDbName) {
+    super(space, dbName, mappedDbName);
   }
 
   @Override

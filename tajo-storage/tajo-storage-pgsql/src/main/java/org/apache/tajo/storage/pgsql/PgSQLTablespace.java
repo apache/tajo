@@ -28,6 +28,7 @@ import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.NullScanner;
 import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.fragment.Fragment;
+import org.apache.tajo.storage.jdbc.ConnectionInfo;
 import org.apache.tajo.storage.jdbc.JdbcFragment;
 import org.apache.tajo.storage.jdbc.JdbcTablespace;
 
@@ -49,7 +50,7 @@ public class PgSQLTablespace extends JdbcTablespace {
   }
 
   public MetadataProvider getMetadataProvider() {
-    return new PgSQLMetadataProvider(this, database);
+    return new PgSQLMetadataProvider(this, database, ConnectionInfo.fromURI(uri).database());
   }
 
   @Override
