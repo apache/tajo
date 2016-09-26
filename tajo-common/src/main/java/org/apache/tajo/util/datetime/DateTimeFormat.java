@@ -592,7 +592,10 @@ public class DateTimeFormat {
   public static TimeMeta parseDateTime(String dateText, String formatText) {
     TimeMeta tm = new TimeMeta();
 
-    //TODO consider TimeZone
+    return parseDateTime(dateText, formatText, tm);
+  }
+
+  public static TimeMeta parseDateTime(String dateText, String formatText, TimeMeta tm) {
     doToTimestamp(dateText, formatText, tm);
 
     // when we parse some date without day like '2014-04', we should set day to 1.
