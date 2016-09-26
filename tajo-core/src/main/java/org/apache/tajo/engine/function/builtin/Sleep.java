@@ -40,12 +40,19 @@ public class Sleep extends GeneralFunction {
   }
 
   @Override
-  public Datum eval(Tuple params) {
-    try {
-      Thread.sleep(params.getInt4(0) * 1000);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
+  public Datum eval(final Tuple params) {
+
+    Runnable sleep = new Runnable() {
+      @Override
+      public void run() {
+        try {
+          Thread.sleep(params.getInt4(0) * 1000);
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        }
+      }
+    };
+    sleep.run();
 
     return DatumFactory.createInt4(params.getInt4(0));
   }
