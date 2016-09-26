@@ -478,7 +478,7 @@ public class TajoCli implements Closeable {
     SimpleParser parser = new SimpleParser();
 
     try {
-      while((line = reader.readLine(currentPrompt + "> ")) != null) {
+      while((line = reader.readLine(currentPrompt + "> ").replaceAll("  ", " ")) != null) {
         if (line.equals("")) {
           continue;
         }
