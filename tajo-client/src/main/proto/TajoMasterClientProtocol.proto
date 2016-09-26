@@ -22,6 +22,7 @@ package tajo.client;
 option java_package = "org.apache.tajo.ipc";
 option java_outer_classname = "TajoMasterClientProtocol";
 option java_generic_services = true;
+option py_generic_services = true;
 option java_generate_equals_and_hash = true;
 
 import "tajo_protos.proto";
