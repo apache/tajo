@@ -33,6 +33,7 @@ import org.apache.tajo.service.HAServiceTracker;
 import org.apache.tajo.service.ServiceTrackerException;
 import org.apache.tajo.service.TajoMasterInfo;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
