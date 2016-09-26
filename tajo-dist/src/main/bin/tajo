@@ -259,6 +259,10 @@ if [ ! -z ${HBASE_HOME} ] && [ -d ${HBASE_HOME} ] && [ -d ${HBASE_LIB} ]; then
     CLASSPATH=${CLASSPATH}:$f;
   done
 
+  for f in ${HBASE_LIB}/hbase-server-*.jar; do
+    CLASSPATH=${CLASSPATH}:$f;
+  done
+
   for f in ${HBASE_LIB}/hbase-client-*.jar; do
     CLASSPATH=${CLASSPATH}:$f;
   done
