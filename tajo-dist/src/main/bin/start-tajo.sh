@@ -32,7 +32,7 @@ if [ "$AUTOHA_ENABLED" = "true" ]; then
   if [ -f "${TAJO_CONF_DIR}/masters" ]; then
     MASTER_FILE=${TAJO_CONF_DIR}/masters
     MASTER_NAMES=$(cat "$MASTER_FILE" | sed  's/#.*$//;/^$/d')
-    "$bin/tajo-daemons.sh" --hosts masters cd "$TAJO_HOME" \; "$bin/tajo-daemon.sh" start master
+    "$bin/tajo-daemons.sh" --hosts masters cd "$TAJO_HOME" \; "$bin/tajo-daemon.sh" --config $TAJO_CONF_DIR start master
   fi
 else
   echo "Starting single TajoMaster"
@@ -46,10 +46,10 @@ fi
 
 
 if [ "$TAJO_PULLSERVER_STANDALONE" = "true" ]; then
-  "$bin/tajo-daemons.sh" cd "$TAJO_HOME" \; "$bin/tajo-daemon.sh" start pullserver
+  "$bin/tajo-daemons.sh" cd "$TAJO_HOME" \; "$bin/tajo-daemon.sh" --config $TAJO_CONF_DIR start pullserver
 fi
 
-"$bin/tajo-daemons.sh" cd "$TAJO_HOME" \; "$bin/tajo-daemon.sh" start worker
+"$bin/tajo-daemons.sh" cd "$TAJO_HOME" \; "$bin/tajo-daemon.sh" --config $TAJO_CONF_DIR start worker
 
 # Display WEB UI URL and TajoMaster RPC address.
 # Getting configuration value of http address and rpc address.
