@@ -152,41 +152,7 @@
           <artifactId>maven-deploy-plugin</artifactId>
           <version>2.5</version>
         </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-antrun-plugin</artifactId>
-          <version>1.6</version>
-          <executions>
-            <execution>
-              <phase>validate</phase>
-              <goals>
-                <goal>run</goal>
-              </goals>
-              <configuration>
-                <target>
-                  <echo file="${project.build.directory}/verify-protocbuf.sh">
-                    PROTOC_VERSION=`protoc --version`
-                    if [ "${PROTOC_VERSION}" == "" ]; then
-                    echo
-                    echo "Protocol buffer is not installed or protocol buffer path did not add to your PATH variable."
-                    echo
-                    exit -1
-                    fi
-                    if [ "${PROTOC_VERSION}" != "libprotoc 2.5.0" ]; then
-                    echo
-                    echo "Tajo requires protocol buffer version 2.5.0, another versions is not supported."
-                    echo
-                    exit -1
-                    fi
-                  </echo>
-                  <exec executable="bash" dir="${project.build.directory}" failonerror="true">
-                    <arg line="./verify-protocbuf.sh" />
-                  </exec>
-                </target>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
+
         <plugin>
           <groupId>org.apache.rat</groupId>
           <artifactId>apache-rat-plugin</artifactId>
