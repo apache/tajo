@@ -65,8 +65,7 @@ before_install:
   # http://docs.travis-ci.com/user/database-setup/#MySQL
   - sudo /etc/init.d/mysql stop
   - sudo /etc/init.d/postgresql stop
-  - sudo sh -c "ulimit -n 64000 && exec su $LOGNAME"
-  - sudo sh -c "sudo ulimit -a"
+  - sudo sh -c "ulimit -u 10000 && ulimit -n 64000 ulimit -t unlimited && ulimit -a && exec su $LOGNAME"
   - free -m
   - df -h
 
