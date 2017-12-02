@@ -13,9 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-dist: trusty
 sudo: required
-
+dist: trusty
 language: java
 
 git:
@@ -66,8 +65,8 @@ before_install:
   # http://docs.travis-ci.com/user/database-setup/#MySQL
   - sudo /etc/init.d/mysql stop
   - sudo /etc/init.d/postgresql stop
-  - sudo ulimit -t unlimited -u 10000 -n 64000
-  - sudo ulimit -a
+  - sudo sh -c "ulimit -n 64000 && exec su $LOGNAME"
+  - sudo sh -c "sudo ulimit -a"
   - free -m
   - df -h
 
