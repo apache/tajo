@@ -74,6 +74,6 @@ install:
   - mvn clean install -q -ff -Dsurefire.useFile=false $HADOOP_FLAG -Pdist -DskipTests -Dtar
 
 script: 
-  - mvn $HADOOP_FLAG $TEST_FLAG
+  - travis_wait 30 mvn $HADOOP_FLAG $TEST_FLAG
   - sh -c "dmesg | grep -i OOM || exit 0"
   - free -m
