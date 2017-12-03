@@ -70,7 +70,6 @@ before_install:
   - df -h
 
 install:
-  - sh dev-support/travis-install-dependencies.sh
   - mvn clean install -q -ff -Dsurefire.useFile=false $HADOOP_FLAG -Pdist -DskipTests -Dtar
 
 script: 
