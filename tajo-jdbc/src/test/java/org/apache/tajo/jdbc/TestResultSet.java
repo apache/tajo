@@ -232,7 +232,7 @@ public class TestResultSet {
       assertEquals(res.getTimestamp(3), res.getTimestamp("col3"));
 
       // assert with timezone
-      //Current timezone + 1 hour
+      // Current timezone + 1 hour
       TimeZone tz = TimeZone.getDefault();
       tz.setRawOffset(tz.getRawOffset() + (int) TimeUnit.HOURS.toMillis(1));
 
@@ -240,7 +240,8 @@ public class TestResultSet {
       assertEquals(tz.getRawOffset(), cal.getTimeZone().getRawOffset());
 
       assertEquals(Date.valueOf("2013-12-31"), res.getDate(1, cal));
-      assertEquals(Time.valueOf("23:00:00"), res.getTime(1, cal));
+      // TODO - See https://issues.apache.org/jira/browse/TAJO-2186
+      assertEquals(Time.valueOf("23:00:00").toString(), res.getTime(1, cal).toString());
       assertEquals(Timestamp.valueOf("2013-12-31 23:00:00.0"), res.getTimestamp(1, cal));
       assertEquals(res.getDate(1, cal), res.getDate("col1", cal));
 
