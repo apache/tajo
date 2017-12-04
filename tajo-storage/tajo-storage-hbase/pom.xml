@@ -112,26 +112,27 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <version>1.2</version>
+        <groupId>com.github.os72</groupId>
+        <artifactId>protoc-jar-maven-plugin</artifactId>
+        <version>3.5.0</version>
         <executions>
           <execution>
-            <id>generate-sources</id>
             <phase>generate-sources</phase>
-            <configuration>
-              <executable>protoc</executable>
-              <arguments>
-                <argument>-Isrc/main/proto/</argument>
-                <argument>--proto_path=../../tajo-common/src/main/proto</argument>
-                <argument>--proto_path=../../tajo-catalog/tajo-catalog-common/src/main/proto</argument>
-                <argument>--java_out=target/generated-sources/proto</argument>
-                <argument>src/main/proto/StorageFragmentProtos.proto</argument>
-              </arguments>
-            </configuration>
             <goals>
-              <goal>exec</goal>
+              <goal>run</goal>
             </goals>
+            <configuration>
+              <protocVersion>2.5.0</protocVersion>
+              <includeStdTypes>true</includeStdTypes>
+              <inputDirectories>
+                <include>src/main/proto/</include>
+              </inputDirectories>
+              <includeDirectories>
+                <includeDirectory>../../tajo-common/src/main/proto</includeDirectory>
+                <includeDirectory>../../tajo-catalog/tajo-catalog-common/src/main/proto</includeDirectory>
+              </includeDirectories>
+              <outputDirectory>target/generated-sources/proto</outputDirectory>
+            </configuration>
           </execution>
         </executions>
       </plugin>

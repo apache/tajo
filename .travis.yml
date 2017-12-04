@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+sudo: required
+dist: trusty
 language: java
 
 git:
@@ -63,16 +65,14 @@ before_install:
   # http://docs.travis-ci.com/user/database-setup/#MySQL
   - sudo /etc/init.d/mysql stop
   - sudo /etc/init.d/postgresql stop
-  - ulimit -t unlimited -u 10000 -n 64000
-  - ulimit -a
+  - sudo sh -c "ulimit -p 10000 && ulimit -n 64000 && ulimit -t unlimited && ulimit -a"
   - free -m
   - df -h
 
 install:
-  - sh dev-support/travis-install-dependencies.sh
   - mvn clean install -q -ff -Dsurefire.useFile=false $HADOOP_FLAG -Pdist -DskipTests -Dtar
 
 script: 
-  - mvn $HADOOP_FLAG $TEST_FLAG
+  - travis_wait 30 mvn $HADOOP_FLAG $TEST_FLAG
   - sh -c "dmesg | grep -i OOM || exit 0"
   - free -m
