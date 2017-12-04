@@ -92,7 +92,6 @@
               </inputDirectories>
               <includeDirectories>
                 <includeDirectory>../../tajo-common/src/main/proto</includeDirectory>
-                <includeDirectory>../../tajo-catalog/tajo-catalog-common/src/main/proto</includeDirectory>
               </includeDirectories>
               <outputDirectory>target/generated-sources/proto</outputDirectory>
             </configuration>
