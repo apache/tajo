@@ -33,9 +33,8 @@ import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
 
 @Description(
     functionName = "ipstr_to_blob",
-    description = "Convert an ipv4 address string to INT4 type",
-    example = "> SELECT ipstr_to_int('1.2.3.4');\n"
-        + "16909060",
+    description = "Convert an ipv4 address string to BINARY type",
+    example = "N/A",
     returnType = BINARY,
     paramTypes = {@ParamTypes(paramTypes = {TEXT})}
 )
