@@ -126,12 +126,12 @@
         <role>PMC</role>
       </roles>
       <timezone>+9</timezone>
-    </developer>      
+    </developer>
     <developer>
       <id>hyunsik</id>
       <name>Hyunsik Choi</name>
       <email>hyunsik@apache.org</email>
-      <organization>Gruter</organization>
+      <organization></organization>
       <roles>
         <role>V.P.</role>
       </roles>
@@ -141,7 +141,7 @@
       <id>blrunner</id>
       <name>JaeHwa Jung</name>
       <email>blrunner@apache.org</email>
-      <organization>Gruter</organization>
+      <organization></organization>
       <roles>
         <role>PMC</role>
       </roles>
@@ -161,7 +161,7 @@
       <id>jhkim</id>
       <name>Jinho Kim</name>
       <email>jhkim@apache.org</email>
-      <organization>Gruter</organization>
+      <organization></organization>
       <roles>
         <role>PMC</role>
       </roles>
@@ -271,7 +271,7 @@
     </contributor>
     <contributor>
       <name>Dongkyu Hwangbo</name>
-      <organization>Gruter</organization>
+      <organization></organization>
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
@@ -296,7 +296,7 @@
     </contributor>
     <contributor>
       <name>Jongyoung Park</name>
-      <organization>Gruter</organization>
+      <organization></organization>
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
@@ -308,12 +308,12 @@
       <name>Mai Hai Thanh</name>
       <organization>ETRI</organization>
       <roles><role>Contributor</role></roles>
-    </contributor>        
+    </contributor>
     <contributor>
       <name>Navis</name>
       <organization>SK Telecom</organization>
       <roles><role>Contributor</role></roles>
-    </contributor> 
+    </contributor>
     <contributor>
       <name>Prafulla T.</name>
       <organization />
@@ -321,7 +321,7 @@
     </contributor>
     <contributor>
       <name>Tae-kyeong Goh</name>
-      <organization>Gruter</organization>
+      <organization></organization>
       <roles><role>Logo Designer</role></roles>
     </contributor>
     <contributor>
@@ -340,12 +340,12 @@
     </contributor>
     <contributor>
       <name>YeonSu Han</name>
-      <organization>Gruter</organization>
+      <organization></organization>
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
       <name>Yongjun Park</name>
-      <organization>Gruter</organization>
+      <organization></organization>
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
@@ -518,7 +518,7 @@
           </configuration>
         </plugin>
 
-        <!--This plugin's configuration is used to store Eclipse m2e settings only. 
+        <!--This plugin's configuration is used to store Eclipse m2e settings only.
           It has no influence on the Maven build itself. -->
         <plugin>
           <groupId>org.eclipse.m2e</groupId>
