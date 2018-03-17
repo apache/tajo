@@ -22,63 +22,61 @@
  * [Announcement] (releases/0.11.3/announcement.html)
  * [Release Notes] (releases/0.11.3/relnotes.html)
  * [User Documentation] (http://tajo.apache.org/docs/0.11.3/index.html)
- * Source: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.11.3/tajo-0.11.3-src.tar.gz' id='tajo-0.11.3-src'>tajo-0.11.3-src.tar.gz</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.11.3/tajo-0.11.3-src.tar.gz.md5)) ([SHA](http://www.apache.org/dist/tajo/tajo-0.11.3/tajo-0.11.3-src.tar.gz.sha512)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.11.3/tajo-0.11.3-src.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
- * Binary Tarball: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.11.3/tajo-0.11.3.tar.gz' id='tajo-0.11.3-bin'>tajo-0.11.3.tar.gz</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.11.3/tajo-0.11.3.tar.gz.md5)) ([SHA](http://www.apache.org/dist/tajo/tajo-0.11.3/tajo-0.11.3.tar.gz.sha512)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.11.3/tajo-0.11.3.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
- * JDBC Driver: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.11.3/tajo-jdbc-0.11.3.jar' id='tajo-jdbc-0.11.3'>tajo-jdbc-0.11.3.jar</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.11.3/tajo-jdbc-0.11.3.jar.md5)) ([SHA](http://www.apache.org/dist/tajo/tajo-0.11.3/tajo-jdbc-0.11.3.jar.sha512)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.11.3/tajo-jdbc-0.11.3.jar.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+ * Source: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.11.3/tajo-0.11.3-src.tar.gz' id='tajo-0.11.3-src'>tajo-0.11.3-src.tar.gz</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.11.3/tajo-0.11.3-src.tar.gz.md5)) ([SHA256](http://www.apache.org/dist/tajo/tajo-0.11.3/tajo-0.11.3-src.tar.gz.sha256)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.11.3/tajo-0.11.3-src.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+ * Binary Tarball: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.11.3/tajo-0.11.3.tar.gz' id='tajo-0.11.3-bin'>tajo-0.11.3.tar.gz</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.11.3/tajo-0.11.3.tar.gz.md5)) ([SHA256](http://www.apache.org/dist/tajo/tajo-0.11.3/tajo-0.11.3.tar.gz.sha256)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.11.3/tajo-0.11.3.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+ * JDBC Driver: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.11.3/tajo-jdbc-0.11.3.jar' id='tajo-jdbc-0.11.3'>tajo-jdbc-0.11.3.jar</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.11.3/tajo-jdbc-0.11.3.jar.md5)) ([SHA256](http://www.apache.org/dist/tajo/tajo-0.11.3/tajo-jdbc-0.11.3.jar.sha256)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.11.3/tajo-jdbc-0.11.3.jar.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
 
 ## Previous Releases
 ### Release 0.11.2 (Apr 7, 2016)
  * [Announcement] (releases/0.11.2/announcement.html)
  * [Release Notes] (releases/0.11.2/relnotes.html)
  * [User Documentation] (http://tajo.apache.org/docs/0.11.1/index.html)
- * Source: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.11.2/tajo-0.11.2-src.tar.gz' id='tajo-0.11.2-src'>tajo-0.11.2-src.tar.gz</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.11.2/tajo-0.11.2-src.tar.gz.md5)) ([SHA](http://www.apache.org/dist/tajo/tajo-0.11.2/tajo-0.11.2-src.tar.gz.sha512)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.11.2/tajo-0.11.2-src.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
- * Binary Tarball: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.11.2/tajo-0.11.2.tar.gz' id='tajo-0.11.2-bin'>tajo-0.11.2.tar.gz</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.11.2/tajo-0.11.2.tar.gz.md5)) ([SHA](http://www.apache.org/dist/tajo/tajo-0.11.2/tajo-0.11.2.tar.gz.sha512)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.11.2/tajo-0.11.2.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
- * JDBC Driver: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.11.2/tajo-jdbc-0.11.2.jar' id='tajo-jdbc-0.11.2'>tajo-jdbc-0.11.2.jar</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.11.2/tajo-jdbc-0.11.2.jar.md5)) ([SHA](http://www.apache.org/dist/tajo/tajo-0.11.2/tajo-jdbc-0.11.2.jar.sha512)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.11.2/tajo-jdbc-0.11.2.jar.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+ * Source: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.11.2/tajo-0.11.2-src.tar.gz' id='tajo-0.11.2-src'>tajo-0.11.2-src.tar.gz</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.11.2/tajo-0.11.2-src.tar.gz.md5)) ([SHA256](http://www.apache.org/dist/tajo/tajo-0.11.2/tajo-0.11.2-src.tar.gz.sha256)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.11.2/tajo-0.11.2-src.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+ * Binary Tarball: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.11.2/tajo-0.11.2.tar.gz' id='tajo-0.11.2-bin'>tajo-0.11.2.tar.gz</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.11.2/tajo-0.11.2.tar.gz.md5)) ([SHA256](http://www.apache.org/dist/tajo/tajo-0.11.2/tajo-0.11.2.tar.gz.sha256)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.11.2/tajo-0.11.2.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+ * JDBC Driver: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.11.2/tajo-jdbc-0.11.2.jar' id='tajo-jdbc-0.11.2'>tajo-jdbc-0.11.2.jar</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.11.2/tajo-jdbc-0.11.2.jar.md5)) ([SHA256](http://www.apache.org/dist/tajo/tajo-0.11.2/tajo-jdbc-0.11.2.jar.sha256)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.11.2/tajo-jdbc-0.11.2.jar.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
 
 ### Release 0.11.1 (Feb 3, 2016)
  * [Announcement] (releases/0.11.1/announcement.html)
  * [Release Notes] (releases/0.11.1/relnotes.html)
  * [User Documentation] (http://tajo.apache.org/docs/0.11.1/index.html)
- * Source: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.11.1/tajo-0.11.1-src.tar.gz' id='tajo-0.11.1-src'>tajo-0.11.1-src.tar.gz</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.11.1/tajo-0.11.1-src.tar.gz.md5)) ([SHA](http://www.apache.org/dist/tajo/tajo-0.11.1/tajo-0.11.1-src.tar.gz.sha512)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.11.1/tajo-0.11.1-src.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
- * Binary Tarball: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.11.1/tajo-0.11.1.tar.gz' id='tajo-0.11.1-bin'>tajo-0.11.1.tar.gz</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.11.1/tajo-0.11.1.tar.gz.md5)) ([SHA](http://www.apache.org/dist/tajo/tajo-0.11.1/tajo-0.11.1.tar.gz.sha512)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.11.1/tajo-0.11.1.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
- * JDBC Driver: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.11.1/tajo-jdbc-0.11.1.jar' id='tajo-jdbc-0.11.1'>tajo-jdbc-0.11.1.jar</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.11.1/tajo-jdbc-0.11.1.jar.md5)) ([SHA](http://www.apache.org/dist/tajo/tajo-0.11.1/tajo-jdbc-0.11.1.jar.sha512)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.11.1/tajo-jdbc-0.11.1.jar.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+ * Source: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.11.1/tajo-0.11.1-src.tar.gz' id='tajo-0.11.1-src'>tajo-0.11.1-src.tar.gz</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.11.1/tajo-0.11.1-src.tar.gz.md5)) ([SHA256](http://www.apache.org/dist/tajo/tajo-0.11.1/tajo-0.11.1-src.tar.gz.sha256)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.11.1/tajo-0.11.1-src.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+ * Binary Tarball: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.11.1/tajo-0.11.1.tar.gz' id='tajo-0.11.1-bin'>tajo-0.11.1.tar.gz</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.11.1/tajo-0.11.1.tar.gz.md5)) ([SHA256](http://www.apache.org/dist/tajo/tajo-0.11.1/tajo-0.11.1.tar.gz.sha256)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.11.1/tajo-0.11.1.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+ * JDBC Driver: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.11.1/tajo-jdbc-0.11.1.jar' id='tajo-jdbc-0.11.1'>tajo-jdbc-0.11.1.jar</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.11.1/tajo-jdbc-0.11.1.jar.md5)) ([SHA256](http://www.apache.org/dist/tajo/tajo-0.11.1/tajo-jdbc-0.11.1.jar.sha256)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.11.1/tajo-jdbc-0.11.1.jar.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
 
 
 ### Release 0.11.0 (Oct 27, 2015)
  * [Announcement] (releases/0.11.0/announcement.html)
  * [Release Notes] (releases/0.11.0/relnotes.html)
  * [User Documentation] (http://tajo.apache.org/docs/0.11.0/index.html)
- * Source: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.11.0/tajo-0.11.0-src.tar.gz' id='tajo-0.11.0-src'>tajo-0.11.0-src.tar.gz</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.11.0/tajo-0.11.0-src.tar.gz.md5)) ([SHA](http://www.apache.org/dist/tajo/tajo-0.11.0/tajo-0.11.0-src.tar.gz.sha512)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.11.0/tajo-0.11.0-src.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
- * Binary Tarball: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.11.0/tajo-0.11.0.tar.gz' id='tajo-0.11.0-bin'>tajo-0.11.0.tar.gz</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.11.0/tajo-0.11.0.tar.gz.md5)) ([SHA](http://www.apache.org/dist/tajo/tajo-0.11.0/tajo-0.11.0.tar.gz.sha512)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.11.0/tajo-0.11.0.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
- * JDBC Driver: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.11.0/tajo-jdbc-0.11.0.jar' id='tajo-jdbc-0.11.0'>tajo-jdbc-0.11.0.jar</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.11.0/tajo-jdbc-0.11.0.jar.md5)) ([SHA](http://www.apache.org/dist/tajo/tajo-0.11.0/tajo-jdbc-0.11.0.jar.sha512)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.11.0/tajo-jdbc-0.11.0.jar.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+ * Source: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.11.0/tajo-0.11.0-src.tar.gz' id='tajo-0.11.0-src'>tajo-0.11.0-src.tar.gz</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.11.0/tajo-0.11.0-src.tar.gz.md5)) ([SHA256](http://www.apache.org/dist/tajo/tajo-0.11.0/tajo-0.11.0-src.tar.gz.sha256)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.11.0/tajo-0.11.0-src.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+ * Binary Tarball: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.11.0/tajo-0.11.0.tar.gz' id='tajo-0.11.0-bin'>tajo-0.11.0.tar.gz</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.11.0/tajo-0.11.0.tar.gz.md5)) ([SHA256](http://www.apache.org/dist/tajo/tajo-0.11.0/tajo-0.11.0.tar.gz.sha256)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.11.0/tajo-0.11.0.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+ * JDBC Driver: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.11.0/tajo-jdbc-0.11.0.jar' id='tajo-jdbc-0.11.0'>tajo-jdbc-0.11.0.jar</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.11.0/tajo-jdbc-0.11.0.jar.md5)) ([SHA256](http://www.apache.org/dist/tajo/tajo-0.11.0/tajo-jdbc-0.11.0.jar.sha256)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.11.0/tajo-jdbc-0.11.0.jar.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
 
 ### Release 0.10.1 (Jun 29, 2015)
 
  * [Announcement] (releases/0.10.1/announcement.html)
  * [Release Notes] (releases/0.10.1/relnotes.html)
  * [User Documentation] (http://tajo.apache.org/docs/0.10.1/index.html)
- * Source: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.10.1/tajo-0.10.1-src.tar.gz' id='tajo-0.10.1-src'>tajo-0.10.1-src.tar.gz</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.10.1/tajo-0.10.1-src.tar.gz.md5)) ([SHA](http://www.apache.org/dist/tajo/tajo-0.10.1/tajo-0.10.1-src.tar.gz.sha512)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.10.1/tajo-0.10.1-src.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
- * Binary Tarball: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.10.1/tajo-0.10.1.tar.gz' id='tajo-0.10.1-bin'>tajo-0.10.1.tar.gz</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.10.1/tajo-0.10.1.tar.gz.md5)) ([SHA](http://www.apache.org/dist/tajo/tajo-0.10.1/tajo-0.10.1.tar.gz.sha512)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.10.1/tajo-0.10.1.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
- * JDBC Driver: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.10.1/tajo-jdbc-0.10.1.jar' id='tajo-jdbc-0.10.1'>tajo-jdbc-0.10.1.jar</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.10.1/tajo-jdbc-0.10.1.jar.md5)) ([SHA](http://www.apache.org/dist/tajo/tajo-0.10.1/tajo-jdbc-0.10.1.jar.sha512)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.10.1/tajo-jdbc-0.10.1.jar.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+ * Source: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.10.1/tajo-0.10.1-src.tar.gz' id='tajo-0.10.1-src'>tajo-0.10.1-src.tar.gz</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.10.1/tajo-0.10.1-src.tar.gz.md5)) ([SHA256](http://www.apache.org/dist/tajo/tajo-0.10.1/tajo-0.10.1-src.tar.gz.sha256)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.10.1/tajo-0.10.1-src.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+ * Binary Tarball: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.10.1/tajo-0.10.1.tar.gz' id='tajo-0.10.1-bin'>tajo-0.10.1.tar.gz</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.10.1/tajo-0.10.1.tar.gz.md5)) ([SHA256](http://www.apache.org/dist/tajo/tajo-0.10.1/tajo-0.10.1.tar.gz.sha256)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.10.1/tajo-0.10.1.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+ * JDBC Driver: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.10.1/tajo-jdbc-0.10.1.jar' id='tajo-jdbc-0.10.1'>tajo-jdbc-0.10.1.jar</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.10.1/tajo-jdbc-0.10.1.jar.md5)) ([SHA256](http://www.apache.org/dist/tajo/tajo-0.10.1/tajo-jdbc-0.10.1.jar.sha256)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.10.1/tajo-jdbc-0.10.1.jar.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
 
 ### Release 0.10.0 (Mar 8, 2015)
 
  * [Announcement] (releases/0.10.0/announcement.html)
  * [Release Notes] (releases/0.10.0/relnotes.html)
  * [User Documentation] (http://tajo.apache.org/docs/0.10.0/index.html)
- * Source: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.10.0/tajo-0.10.0-src.tar.gz' id='tajo-0.10.0-src'>tajo-0.10.0-src.tar.gz</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.10.0/tajo-0.10.0-src.tar.gz.md5)) ([SHA](http://www.apache.org/dist/tajo/tajo-0.10.0/tajo-0.10.0-src.tar.gz.sha)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.10.0/tajo-0.10.0-src.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
- * Binary Tarball: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.10.0/tajo-0.10.0.tar.gz' id='tajo-0.10.0-bin'>tajo-0.10.0.tar.gz</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.10.0/tajo-0.10.0.tar.gz.md5)) ([SHA](http://www.apache.org/dist/tajo/tajo-0.10.0/tajo-0.10.0.tar.gz.sha)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.10.0/tajo-0.10.0.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
- * JDBC Driver: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.10.0/tajo-jdbc-0.10.0.jar' id='tajo-jdbc-0.10.0'>tajo-jdbc-0.10.0.jar</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.10.0/tajo-jdbc-0.10.0.jar.md5)) ([SHA](http://www.apache.org/dist/tajo/tajo-0.10.0/tajo-jdbc-0.10.0.jar.sha)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.10.0/tajo-jdbc-0.10.0.jar.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+ * Source: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.10.0/tajo-0.10.0-src.tar.gz' id='tajo-0.10.0-src'>tajo-0.10.0-src.tar.gz</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.10.0/tajo-0.10.0-src.tar.gz.md5)) ([SHA256](http://www.apache.org/dist/tajo/tajo-0.10.0/tajo-0.10.0-src.tar.gz.sha256)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.10.0/tajo-0.10.0-src.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+ * Binary Tarball: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.10.0/tajo-0.10.0.tar.gz' id='tajo-0.10.0-bin'>tajo-0.10.0.tar.gz</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.10.0/tajo-0.10.0.tar.gz.md5)) ([SHA256](http://www.apache.org/dist/tajo/tajo-0.10.0/tajo-0.10.0.tar.gz.sha256)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.10.0/tajo-0.10.0.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+ * JDBC Driver: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.10.0/tajo-jdbc-0.10.0.jar' id='tajo-jdbc-0.10.0'>tajo-jdbc-0.10.0.jar</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.10.0/tajo-jdbc-0.10.0.jar.md5)) ([SHA256](http://www.apache.org/dist/tajo/tajo-0.10.0/tajo-jdbc-0.10.0.jar.sha256)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.10.0/tajo-jdbc-0.10.0.jar.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
 
 ### Release 0.9.0 (Oct 21, 2014)
 
  * [Announcement] (releases/0.9.0/announcement.html)
  * [Release Notes] (releases/0.9.0/relnotes.html)
  * [User Documentation] (http://tajo.apache.org/docs/0.9.0/index.html)
- * Source: [tajo-0.9.0-src.tar.gz](http://apache.org/dyn/closer.cgi/tajo/tajo-0.9.0/tajo-0.9.0-src.tar.gz) ([MD5](http://www.apache.org/dist/tajo/tajo-0.9.0/tajo-0.9.0-src.tar.gz.md5)) ([SHA1](http://www.apache.org/dist/tajo/tajo-0.9.0/tajo-0.9.0-src.tar.gz.sha)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.9.0/tajo-0.9.0-src.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
- * Source: [tajo-0.9.0-src.tar.bz2](http://apache.org/dyn/closer.cgi/tajo/tajo-0.9.0/tajo-0.9.0-src.tar.bz2) ([MD5](http://www.apache.org/dist/tajo/tajo-0.9.0/tajo-0.9.0-src.tar.bz2.md5)) ([SHA1](http://www.apache.org/dist/tajo/tajo-0.9.0/tajo-0.9.0-src.tar.bz2.sha)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.9.0/tajo-0.9.0-src.tar.bz2.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
- * Source: [tajo-0.9.0-src.zip](http://apache.org/dyn/closer.cgi/tajo/tajo-0.9.0/tajo-0.9.0-src.zip) ([MD5](http://www.apache.org/dist/tajo/tajo-0.9.0/tajo-0.9.0-src.zip.md5)) ([SHA1](http://www.apache.org/dist/tajo/tajo-0.9.0/tajo-0.9.0-src.zip.sha)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.9.0/tajo-0.9.0-src.zip.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
- * Binary Tarball: [tajo-0.9.0.tar.gz] (http://apache.org/dyn/closer.cgi/tajo/tajo-0.9.0/tajo-0.9.0.tar.gz) ([MD5](http://www.apache.org/dist/tajo/tajo-0.9.0/tajo-0.9.0.tar.gz.md5)) ([SHA1](http://www.apache.org/dist/tajo/tajo-0.9.0/tajo-0.9.0.tar.gz.sha)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.9.0/tajo-0.9.0.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+ * Source: [tajo-0.9.0-src.tar.gz](http://apache.org/dyn/closer.cgi/tajo/tajo-0.9.0/tajo-0.9.0-src.tar.gz) ([MD5](http://www.apache.org/dist/tajo/tajo-0.9.0/tajo-0.9.0-src.tar.gz.md5)) ([SHA256](http://www.apache.org/dist/tajo/tajo-0.9.0/tajo-0.9.0-src.tar.gz.sha256)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.9.0/tajo-0.9.0-src.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+ * Binary Tarball: [tajo-0.9.0.tar.gz] (http://apache.org/dyn/closer.cgi/tajo/tajo-0.9.0/tajo-0.9.0.tar.gz) ([MD5](http://www.apache.org/dist/tajo/tajo-0.9.0/tajo-0.9.0.tar.gz.md5)) ([SHA256](http://www.apache.org/dist/tajo/tajo-0.9.0/tajo-0.9.0.tar.gz.sha256)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.9.0/tajo-0.9.0.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
 
 
 ### Release 0.8.0 (May 1, 2014)
@@ -86,14 +84,8 @@
  * [Announcement] (releases/0.8.0/announcement.html)
  * [Release Notes] (releases/0.8.0/relnotes.html)
  * [User Documentation] (http://tajo.apache.org/docs/0.8.0/index.html)
- * [Source Tarball](http://apache.org/dyn/closer.cgi/tajo/tajo-0.8.0/tajo-0.8.0-src.tar.gz) ([MD5](http://www.apache.org/dist/tajo/tajo-0.8.0/tajo-0.8.0-src.tar.gz.md5)) ([SHA1](http://www.apache.org/dist/tajo/tajo-0.8.0/tajo-0.8.0-src.tar.gz.sha)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.8.0/tajo-0.8.0-src.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
- * [Binary Tarball](http://apache.org/dyn/closer.cgi/tajo/tajo-0.8.0/tajo-0.8.0.tar.gz) ([MD5](http://www.apache.org/dist/tajo/tajo-0.8.0/tajo-0.8.0.tar.gz.md5)) ([SHA1](http://www.apache.org/dist/tajo/tajo-0.8.0/tajo-0.8.0.tar.gz.sha)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.8.0/tajo-0.8.0.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
-
-### Release 0.2-incubating (Nov 20, 2013)
- * [Announcement] (https://blogs.apache.org/tajo/entry/apache_tajo_0_2_0)
- * [Release Notes](http://s.apache.org/tajo-0.2-release-notes)
- * [User Documentation] (tajo-0.2.0-doc.html)
- * [Source Tarball](http://apache.org/dyn/closer.cgi/tajo/tajo-0.2.0-incubating/tajo-0.2.0-incubating-src.tar.gz) ([MD5](http://www.apache.org/dist/tajo/tajo-0.2.0-incubating/tajo-0.2.0-incubating-src.tar.gz.md5)) ([SHA1](http://www.apache.org/dist/tajo/tajo-0.2.0-incubating/tajo-0.2.0-incubating-src.tar.gz.sha1)) ([ASC](http://www.apache.org/dist/tajo/tajo-0.2.0-incubating/tajo-0.2.0-incubating-src.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+ * [Source Tarball](http://apache.org/dyn/closer.cgi/tajo/tajo-0.8.0/tajo-0.8.0-src.tar.gz) ([MD5](http://www.apache.org/dist/tajo/tajo-0.8.0/tajo-0.8.0-src.tar.gz.md5)) ([SHA256](http://www.apache.org/dist/tajo/tajo-0.8.0/tajo-0.8.0-src.tar.gz.sha256)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.8.0/tajo-0.8.0-src.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+ * [Binary Tarball](http://apache.org/dyn/closer.cgi/tajo/tajo-0.8.0/tajo-0.8.0.tar.gz) ([MD5](http://www.apache.org/dist/tajo/tajo-0.8.0/tajo-0.8.0.tar.gz.md5)) ([SHA256](http://www.apache.org/dist/tajo/tajo-0.8.0/tajo-0.8.0.tar.gz.sha256)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.8.0/tajo-0.8.0.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
 
 ## Nightly builds
 
@@ -126,13 +118,13 @@ The PGP signatures can be verified using PGP or GPG. First download the [KEYS](h
 or
 
 
-``` 
+```
 % pgp -ka KEYS
 
 % pgp tajo-0.X.0.tar.gz.asc
 ```
 
-or 
+or
 
 ```
 % gpg --import KEYS
@@ -140,9 +132,9 @@ or
 % gpg --verify tajo-0.X.0.tar.gz.asc
 ```
 
-### How to verify SHA1/MD5 hash values
+### How to verify SHA256/MD5 hash values
 
-Alternatively, you can verify the MD5 signature on the files. A unix program called md5 or md5sum is included in many unix distributions. It is also available as part of [GNU Textutils](http://www.gnu.org/software/textutils/textutils.html). An MD5 signature consists of 32 hex characters, and a SHA1 signature consists of 40 hex characters. You can verify the signatures as follows:
+Alternatively, you can verify the MD5 signature on the files. A unix program called md5 or md5sum is included in many unix distributions. It is also available as part of [GNU Textutils](http://www.gnu.org/software/textutils/textutils.html). An MD5 signature consists of 32 hex characters, and a SHA256 signature consists of 40 hex characters. You can verify the signatures as follows:
 
 ```
 md5sum -c tajo-0.x.0.tar.gz.md5
@@ -151,5 +143,5 @@ md5sum -c tajo-0.x.0.tar.gz.md5
 or
 
 ```
-sha1sum -c tajo-0.x.0.tar.gz.sha1
+sha256sum -c tajo-0.x.0.tar.gz.sha1
 ```
