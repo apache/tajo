@@ -57,8 +57,11 @@ public abstract class ClassUtil {
   private static void findClasses(Set<Class> matchedClassSet, File root, File file, boolean includeJars,
                                   @Nullable Class type, String packageFilter, @Nullable Predicate predicate) {
     if (file.isDirectory()) {
-      for (File child : file.listFiles()) {
-        findClasses(matchedClassSet, root, child, includeJars, type, packageFilter, predicate);
+      File[] children = file.listFiles();
+      if (children != null) {
+        for (File child : children) {
+          findClasses(matchedClassSet, root, child, includeJars, type, packageFilter, predicate);
+        }
       }
     } else {
       if (file.getName().toLowerCase().endsWith(".jar") && includeJars) {
