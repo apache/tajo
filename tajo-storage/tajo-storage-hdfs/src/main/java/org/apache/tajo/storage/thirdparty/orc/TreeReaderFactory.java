@@ -1217,7 +1217,7 @@ public class TreeReaderFactory {
         } else {
           result.clear();
         }
-        return result.getBytes();
+        return result.copyBytes();
       } else {
         return null;
       }
