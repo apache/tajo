@@ -78,6 +78,16 @@ public class TestStorages {
       "  ]\n" +
       "}\n";
 
+  private static String TEST_VARIABLE_LENGTH_AVRO_SCHEMA =
+      "{\n" +
+          "  \"type\": \"record\",\n" +
+          "  \"namespace\": \"org.apache.tajo\",\n" +
+          "  \"name\": \"testVariableLength\",\n" +
+          "  \"fields\": [\n" +
+          "    { \"name\": \"col1\", \"type\": \"string\" }\n" +
+          "  ]\n" +
+          "}\n";
+
   private static String TEST_NULL_HANDLING_TYPES_AVRO_SCHEMA =
       "{\n" +
       "  \"type\": \"record\",\n" +
@@ -475,6 +485,51 @@ public class TestStorages {
       for (int i = 0; i < tuple.size(); i++) {
         assertEquals(tuple.get(i), retrieved.asDatum(i));
       }
+    }
+    scanner.close();
+  }
+
+  @Test
+  public void testVariableLength() throws IOException {
+    SchemaBuilder schemaBld = SchemaBuilder.builder()
+        .add("col1", Type.TEXT);
+
+    Schema schema = schemaBld.build();
+
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, conf);
+    if (dataFormat.equalsIgnoreCase(BuiltinStorages.AVRO)) {
+      meta.putProperty(StorageConstants.AVRO_SCHEMA_LITERAL, TEST_VARIABLE_LENGTH_AVRO_SCHEMA);
+    }
+
+    FileTablespace sm = TablespaceManager.getLocalFs();
+    Path tablePath = new Path(testDir, "testVariableLength.data");
+    Appender appender = sm.getAppender(meta, schema, tablePath);
+    appender.init();
+
+    String testStr = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz";
+    String testStr2 = "xxxxxxxxxxxxxxxx";  // test for dictionary encoding
+
+    for(int i = 100; i > 0; i--) {
+      VTuple tuple = new VTuple(1 );
+      tuple.put(new Datum[] {
+          DatumFactory.createText(i % 2 == 0 ? testStr + i : testStr2)
+      });
+
+      appender.addTuple(tuple);
+    }
+    appender.flush();
+    appender.close();
+
+    FileStatus status = fs.getFileStatus(tablePath);
+    FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
+    Scanner scanner =  sm.getScanner(meta, schema, fragment, null);
+    scanner.init();
+
+    Tuple retrieved;
+    int idx = 100;
+    while ((retrieved = scanner.next()) != null) {
+      assertEquals((idx % 2 == 0 ? testStr + idx : testStr2), retrieved.asDatum(0).toString());
+      idx--;
     }
     scanner.close();
   }
