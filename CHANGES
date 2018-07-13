@@ -169,6 +169,8 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-2189: Dictionary encoded text in ORC scanner may cause incorrect result. (jinho)
+
     TAJO-2188: Can't start tajo daemon on HDP,CDH (jinho)
 
     TAJO-2184: Can not run Tajo with non-default $TAJO_CONF_DIR (Lee Dongjin via hyunsik)
