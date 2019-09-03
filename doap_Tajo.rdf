@@ -49,7 +49,7 @@
     <category rdf:resource="http://projects.apache.org/category/big-data" />
     <repository>
       <SVNRepository>
-        <location rdf:resource="https://git-wip-us.apache.org/repos/asf/tajo.git"/>
+        <location rdf:resource="https://github.com/apache/tajo.git"/>
         <browse rdf:resource="https://git-wip-us.apache.org/repos/asf?p=tajo.git"/>
       </SVNRepository>
     </repository>

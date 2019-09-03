@@ -19,17 +19,17 @@
 
 ## Apache Git Repository
 
-The development codebase can also be downloaded from the [Apache git repository](https://git-wip-us.apache.org/repos/asf/tajo.git) at:
+The development codebase can also be downloaded from the [Apache git repository](https://github.com/apache/tajo.git) at:
 
 ```
-git clone https://git-wip-us.apache.org/repos/asf/tajo.git
+git clone https://github.com/apache/tajo.git
 ```
 
 ### Getting a Specific Branch or Tag
 If you want to get a specific branch or tagged source code, just add an option -b *branch or tag name* as follow:
 
 ```
-git clone -b [branch or tag name] https://git-wip-us.apache.org/repos/asf/tajo.git
+git clone -b [branch or tag name] https://github.com/apache/tajo.git
 ```
 
 You can see all available branch or tag lists at [here](https://git-wip-us.apache.org/repos/asf?p=tajo.git;a=tags).

@@ -93,10 +93,10 @@ For developers, Tajo maintains nightly builds and SNAPSHOT artifacts. More infor
 
 ## Getting the source code via Git
 
-The development codebase can also be downloaded from [the Apache git repository](https://git-wip-us.apache.org/repos/asf/tajo.git) as follows:
+The development codebase can also be downloaded from [the Apache git repository](https://github.com/apache/tajo.git) as follows:
 
 ```
-git clone https://git-wip-us.apache.org/repos/asf/tajo.git
+git clone https://github.com/apache/tajo.git
 ```
 
 A read-only git repository is also mirrored on [Github](https://github.com/apache/tajo).

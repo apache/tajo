@@ -157,7 +157,7 @@ First, you must compile source code and get a binary archive as follows:
 
 .. code-block:: sh
 
-  $ git clone https://git-wip-us.apache.org/repos/asf/tajo.git tajo
+  $ git clone https://github.com/apache/tajo.git tajo
   $ mvn clean install -DskipTests -Pdist -Dtar
   $ ls tajo-dist/target/tajo-x.y.z-SNAPSHOT.tar.gz
 
