@@ -50,7 +50,7 @@
     <repository>
       <SVNRepository>
         <location rdf:resource="https://github.com/apache/tajo.git"/>
-        <browse rdf:resource="https://git-wip-us.apache.org/repos/asf?p=tajo.git"/>
+        <browse rdf:resource="https://github.com/apache/tajo"/>
       </SVNRepository>
     </repository>
     <maintainer>

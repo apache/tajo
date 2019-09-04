@@ -32,7 +32,8 @@ If you want to get a specific branch or tagged source code, just add an option -
 git clone -b [branch or tag name] https://github.com/apache/tajo.git
 ```
 
-You can see all available branch or tag lists at [here](https://git-wip-us.apache.org/repos/asf?p=tajo.git;a=tags).
+You can see all available [releases](https://github.com/apache/tajo/releases), 
+[branches](https://github.com/apache/tajo/branches), and [tags](https://github.com/apache/tajo/tags).
 
 ## Github
 
