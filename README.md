@@ -12,7 +12,7 @@ and its optimizer.
 ## Project
 
 * [Project Home](http://tajo.apache.org/)
-* [Source Repository](https://git-wip-us.apache.org/repos/asf/tajo.git)
+* [Source Repository](https://github.com/apache/tajo.git)
 * [Issue Tracking](https://issues.apache.org/jira/browse/TAJO)
 
 ## License

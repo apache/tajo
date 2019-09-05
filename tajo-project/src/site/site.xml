@@ -173,7 +173,7 @@ window.onload = ga_event_load;
     </head>
 
     <links>
-      <item name="GIT" href="https://git-wip-us.apache.org/repos/asf/tajo.git" />
+      <item name="GIT" href="https://github.com/apache/tajo.git" />
     </links>
 
     <breadcrumbs>
