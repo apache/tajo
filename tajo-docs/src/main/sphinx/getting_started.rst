@@ -33,9 +33,9 @@ Decompress and untar your downloaded file and then change into the unpacked dire
 Check out the source code via Git
 -----------------------------------
 
-The development codebase can also be downloaded from `the Apache git repository <https://git-wip-us.apache.org/repos/asf/tajo.git>`_ as follows: ::
+The development codebase can also be downloaded from `the Apache git repository <https://github.com/apache/tajo.git>`_ as follows: ::
 
-  git clone https://git-wip-us.apache.org/repos/asf/tajo.git
+  git clone https://github.com/apache/tajo.git
 
 A read-only git repository is also mirrored on `Github <https://github.com/apache/tajo>`_.
 

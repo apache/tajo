@@ -98,7 +98,7 @@ Download the source code from http://tajo.apache.org/downloads.html.
 Download the source code and build Tajo as follows:
 
 ```
-$ git clone https://git-wip-us.apache.org/repos/asf/tajo.git tajo
+$ git clone https://github.com/apache/tajo.git tajo
 ```
 
 ## <a name="BuildSourceCode"></a>Build Source Code
