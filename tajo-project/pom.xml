@@ -22,7 +22,7 @@
   <parent>
     <groupId>org.apache.tajo</groupId>
     <artifactId>tajo-main</artifactId>
-    <version>0.12.0-SNAPSHOT</version>
+    <version>0.12.0</version>
   </parent>
   <artifactId>tajo-project</artifactId>
   <description>Tajo Project POM</description>
@@ -121,7 +121,7 @@
       <id>hjkim</id>
       <name>Hyoung Jun Kim</name>
       <email>hjkim@apache.org</email>
-      <organization></organization>
+      <organization />
       <roles>
         <role>PMC</role>
       </roles>
@@ -131,7 +131,7 @@
       <id>hyunsik</id>
       <name>Hyunsik Choi</name>
       <email>hyunsik@apache.org</email>
-      <organization></organization>
+      <organization />
       <roles>
         <role>V.P.</role>
       </roles>
@@ -141,7 +141,7 @@
       <id>blrunner</id>
       <name>JaeHwa Jung</name>
       <email>blrunner@apache.org</email>
-      <organization></organization>
+      <organization />
       <roles>
         <role>PMC</role>
       </roles>
@@ -161,7 +161,7 @@
       <id>jhkim</id>
       <name>Jinho Kim</name>
       <email>jhkim@apache.org</email>
-      <organization></organization>
+      <organization />
       <roles>
         <role>PMC</role>
       </roles>
@@ -181,7 +181,7 @@
       <id>jihun</id>
       <name>Jihun Kang</name>
       <email>jihun@apache.org</email>
-      <organization></organization>
+      <organization />
       <roles>
         <role>Committer</role>
       </roles>
@@ -271,7 +271,7 @@
     </contributor>
     <contributor>
       <name>Dongkyu Hwangbo</name>
-      <organization></organization>
+      <organization />
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
@@ -296,7 +296,7 @@
     </contributor>
     <contributor>
       <name>Jongyoung Park</name>
-      <organization></organization>
+      <organization />
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
@@ -321,7 +321,7 @@
     </contributor>
     <contributor>
       <name>Tae-kyeong Goh</name>
-      <organization></organization>
+      <organization />
       <roles><role>Logo Designer</role></roles>
     </contributor>
     <contributor>
@@ -340,12 +340,12 @@
     </contributor>
     <contributor>
       <name>YeonSu Han</name>
-      <organization></organization>
+      <organization />
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
       <name>Yongjun Park</name>
-      <organization></organization>
+      <organization />
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
@@ -364,7 +364,7 @@
     <url>https://github.com/apache/tajo.git</url>
     <connection>scm:git:https://github.com/apache/tajo.git</connection>
     <developerConnection>scm:git:https://github.com/apache/tajo.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>release-0.12.0-rc0</tag>
   </scm>
 
   <mailingLists>
