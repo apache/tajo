@@ -20,7 +20,7 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <artifactId>tajo-project</artifactId>
-    <version>0.12.0</version>
+    <version>0.12.1-SNAPSHOT</version>
     <groupId>org.apache.tajo</groupId>
     <relativePath>../tajo-project</relativePath>
   </parent>

@@ -17,7 +17,7 @@
   <parent>
     <groupId>org.apache.tajo</groupId>
     <artifactId>tajo-project</artifactId>
-    <version>0.12.0</version>
+    <version>0.12.1-SNAPSHOT</version>
     <relativePath>../tajo-project</relativePath>
   </parent>
   <groupId>org.apache.tajo</groupId>

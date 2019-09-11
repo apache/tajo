@@ -22,7 +22,7 @@
   <parent>
     <groupId>org.apache.tajo</groupId>
     <artifactId>tajo-main</artifactId>
-    <version>0.12.0</version>
+    <version>0.12.1-SNAPSHOT</version>
   </parent>
   <artifactId>tajo-project</artifactId>
   <description>Tajo Project POM</description>
@@ -364,7 +364,7 @@
     <url>https://github.com/apache/tajo.git</url>
     <connection>scm:git:https://github.com/apache/tajo.git</connection>
     <developerConnection>scm:git:https://github.com/apache/tajo.git</developerConnection>
-    <tag>release-0.12.0-rc0</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <mailingLists>
