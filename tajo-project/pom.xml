@@ -391,7 +391,7 @@
   <repositories>
     <repository>
       <id>eclipse-jetty</id>
-      <url>http://repo2.maven.org/maven2/org/eclipse/jetty/jetty-distribution/</url>
+      <url>https://repo2.maven.org/maven2/org/eclipse/jetty/jetty-distribution/</url>
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
