@@ -1,0 +1,1 @@
+select g1.title from got g1, got g2 where g1.first_name = g2.first_name

@@ -1,0 +1,1 @@
+select last_name, count(*) from got group by last_name;

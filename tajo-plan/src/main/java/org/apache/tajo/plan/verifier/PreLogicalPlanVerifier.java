@@ -255,6 +255,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
         if (expr.hasSelfDescSchema()) {
           // TODO: support other types like Parquet and ORC.
           if (!expr.getStorageType().equalsIgnoreCase(BuiltinStorages.JSON) &&
+                  !expr.getStorageType().equalsIgnoreCase(BuiltinStorages.MONGODB) &&
               !expr.getStorageType().equalsIgnoreCase(BuiltinStorages.EX_HTTP_JSON)) {
             if (expr.getStorageType().equalsIgnoreCase(BuiltinStorages.PARQUET) ||
                 expr.getStorageType().equalsIgnoreCase(BuiltinStorages.ORC)) {

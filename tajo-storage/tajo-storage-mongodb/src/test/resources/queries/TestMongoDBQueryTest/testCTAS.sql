@@ -1,0 +1,1 @@
+CREATE TABLE got2(first_name text,last_name text) AS SELECT 'a','b';

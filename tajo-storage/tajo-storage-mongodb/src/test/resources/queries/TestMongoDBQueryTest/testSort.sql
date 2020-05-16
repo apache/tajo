@@ -1,0 +1,1 @@
+select title,first_name from got order by first_name;
