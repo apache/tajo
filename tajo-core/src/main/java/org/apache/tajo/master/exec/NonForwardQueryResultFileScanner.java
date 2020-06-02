@@ -29,6 +29,7 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos.CodecType;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TaskId;
+import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.TableDesc;
@@ -82,10 +83,12 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
   final private Optional<CodecType> codecType;
   private MemoryRowBlock rowBlock;
   private Future<MemoryRowBlock> nextFetch;
+  private CatalogService catalog;
+
 
   public NonForwardQueryResultFileScanner(AsyncTaskService asyncTaskService,
-                                          TajoConf tajoConf, String sessionId, QueryId queryId, ScanNode scanNode,
-                                          int maxRow, Optional<CodecType> codecType) throws IOException {
+                                TajoConf tajoConf, String sessionId, QueryId queryId, ScanNode scanNode,
+                                int maxRow, Optional<CodecType> codecType, CatalogService catalog) throws IOException {
     this.asyncTaskService = asyncTaskService;
     this.tajoConf = tajoConf;
     this.sessionId = sessionId;
@@ -95,6 +98,7 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
     this.maxRow = maxRow;
     this.rowEncoder = RowStoreUtil.createEncoder(scanNode.getOutSchema());
     this.codecType = codecType;
+    this.catalog = catalog;
   }
 
   public void init() throws IOException, TajoException {
@@ -105,7 +109,7 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
     Tablespace tablespace = TablespaceManager.get(tableDesc.getUri());
 
     List<Fragment> fragments = Lists.newArrayList(
-        SplitUtil.getSplits(tablespace, scanNode, scanNode.getTableDesc(), true));
+        SplitUtil.getSplits(tablespace, scanNode, scanNode.getTableDesc(), true, catalog, tajoConf));
 
     if (!fragments.isEmpty()) {
       FragmentProto[] fragmentProtos =

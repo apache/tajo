@@ -144,7 +144,8 @@ public class QueryResultResource {
           queryId,
           scanNode,
           Integer.MAX_VALUE,
-          Optional.empty());
+          Optional.empty(),
+          masterContext.getCatalog());
       resultScanner.init();
       session.addNonForwardQueryResultScanner(resultScanner);
     }

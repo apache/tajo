@@ -120,9 +120,6 @@ public class ExplainPlanPreprocessorForTest {
         throws TajoException {
       super.visitPartitionedTableScan(context, plan, block, node, stack);
       context.childNumbers.push(1);
-      Path[] inputPaths = node.getInputPaths();
-      Arrays.sort(inputPaths);
-      node.setInputPaths(inputPaths);
       if (node.hasTargets()) {
         node.setTargets(sortTargets(node.getTargets()));
       }

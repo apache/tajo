@@ -32,24 +32,41 @@ import java.util.Arrays;
  */
 public class FileFragment extends AbstractFileFragment {
   private Integer[] diskIds; // disk volume ids
+  private String partitionKeys;
 
   public FileFragment(String tableName, Path uri, BlockLocation blockLocation)
       throws IOException {
-    this(tableName, uri, blockLocation.getOffset(), blockLocation.getLength(), blockLocation.getHosts(), null);
+    this(tableName, uri, blockLocation.getOffset(), blockLocation.getLength(), blockLocation.getHosts(), null, null);
   }
 
-  public FileFragment(String tableName, Path uri, long start, long length, String[] hosts, Integer[] diskIds) {
+  public FileFragment(String tableName, Path uri, BlockLocation blockLocation, String partitionKeys)
+    throws IOException {
+    this(tableName, uri, blockLocation.getOffset(), blockLocation.getLength(), blockLocation.getHosts(), null,
+      partitionKeys);
+  }
+
+  public FileFragment(String tableName, Path uri, long start, long length, String[] hosts, Integer[] diskIds,
+                      String partitionKeys) {
     super(BuiltinFragmentKinds.FILE, uri.toUri(), tableName, start, start + length, length, hosts);
     this.diskIds = diskIds;
+    this.partitionKeys = partitionKeys;
   }
 
   // Non splittable
   public FileFragment(String tableName, Path uri, long start, long length, String[] hosts) {
-    this(tableName, uri, start, length, hosts, null);
+    this(tableName, uri, start, length, hosts, null, null);
+  }
+
+  public FileFragment(String tableName, Path uri, long start, long length, String[] hosts, String partitionKeys) {
+    this(tableName, uri, start, length, hosts, null, partitionKeys);
   }
 
   public FileFragment(String fragmentId, Path path, long start, long length) {
-    this(fragmentId, path, start, length, null, null);
+    this(fragmentId, path, start, length, null, null, null);
+  }
+
+  public FileFragment(String fragmentId, Path path, long start, long length, String partitionKeys) {
+    this(fragmentId, path, start, length, null, null, partitionKeys);
   }
 
   /**
@@ -66,6 +83,14 @@ public class FileFragment extends AbstractFileFragment {
 
   public void setDiskIds(Integer[] diskIds){
     this.diskIds = diskIds;
+  }
+
+  public String getPartitionKeys() {
+    return this.partitionKeys;
+  }
+
+  public void setPartitionKeys(String partitionKeys) {
+    this.partitionKeys = partitionKeys;
   }
 
   public Path getPath() {
@@ -91,20 +116,21 @@ public class FileFragment extends AbstractFileFragment {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(inputSourceId, uri, startKey, endKey, length, diskIds, hostNames);
+    return Objects.hashCode(inputSourceId, uri, startKey, endKey, length, diskIds, hostNames, partitionKeys);
   }
 
   @Override
   public Object clone() throws CloneNotSupportedException {
     FileFragment frag = (FileFragment) super.clone();
     frag.diskIds = diskIds;
+    frag.partitionKeys = partitionKeys;
     return frag;
   }
 
   @Override
   public String toString() {
-    return "\"fragment\": {\"id\": \""+ inputSourceId +"\", \"path\": "
-    		+getPath() + "\", \"start\": " + this.getStartKey() + ",\"length\": "
-        + getLength() + "}" ;
+    return "\"fragment\": {\"id\": \""+ inputSourceId +"\", \"path\": " + getPath()
+      + "\", \"start\": " + this.getStartKey() + ",\"length\": " + getLength()
+      + ",\"partitionKeys\": " + getPartitionKeys() + "}" ;
   }
 }

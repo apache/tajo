@@ -78,6 +78,11 @@ public class CatalogUtil {
     return new TableDesc(tableName, schema, meta, path.toUri());
   }
 
+  public static TableDesc newTableDesc(String tableName, Schema schema, TableMeta meta, Path path
+    , PartitionMethodDesc partitionMethodDesc) {
+    return new TableDesc(tableName, schema, meta, path.toUri(), partitionMethodDesc);
+  }
+
   public static TableDesc newTableDesc(TableDescProto proto) {
     return new TableDesc(proto);
   }

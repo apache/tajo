@@ -16,23 +16,34 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.plan.logical;
+package org.apache.tajo.plan.partition;
 
-public class PartitionedTableScanNode extends ScanNode {
-  public PartitionedTableScanNode(int pid) {
-    super(pid, NodeType.PARTITIONS_SCAN);
+import org.apache.hadoop.fs.Path;
+
+/**
+ * This includes result informs of partition pruning.
+ *
+ */
+public class PartitionPruningHandle {
+  private Path[] partitionPaths;
+  private String[] partitionKeys;
+  private long totalVolume;
+
+  public PartitionPruningHandle(Path[] partitionPaths, String[] partitionKeys, long totalVolume) {
+    this.partitionPaths = partitionPaths;
+    this.partitionKeys = partitionKeys;
+    this.totalVolume = totalVolume;
   }
 
-  public void init(ScanNode scanNode) {
-    tableDesc = scanNode.tableDesc;
-    setInSchema(scanNode.getInSchema());
-    setOutSchema(scanNode.getOutSchema());
-    this.qual = scanNode.qual;
-    this.targets = scanNode.targets;
-
-    if (scanNode.hasAlias()) {
-      alias = scanNode.alias;
-    }
+  public Path[] getPartitionPaths() {
+    return partitionPaths;
   }
 
+  public String[] getPartitionKeys() {
+    return partitionKeys;
+  }
+
+  public long getTotalVolume() {
+    return totalVolume;
+  }
 }

@@ -51,32 +51,46 @@ public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Clone
 	public TableDesc() {
 	}
 
+  public TableDesc(String tableName, @Nullable Schema schema, TableMeta meta, @Nullable URI uri, boolean external) {
+    this(tableName, schema, meta, uri, null, external);
+  }
+
   public TableDesc(String tableName, @Nullable Schema schema, TableMeta meta,
-                   @Nullable URI uri, boolean external) {
+                   @Nullable URI uri, @Nullable PartitionMethodDesc partitionMethodDesc, boolean external) {
     this.tableName = tableName;
     this.schema = schema;
     this.meta = meta;
     this.uri = uri;
+    this.partitionMethodDesc = partitionMethodDesc;
     this.external = external;
   }
 
 	public TableDesc(String tableName, @Nullable Schema schema, TableMeta meta, @Nullable URI path) {
-		this(tableName, schema, meta, path, true);
+		this(tableName, schema, meta, path, null, true);
 	}
-	
+
+  public TableDesc(String tableName, @Nullable Schema schema, TableMeta meta, @Nullable URI path,
+                   @Nullable PartitionMethodDesc partitionMethodDesc) {
+    this(tableName, schema, meta, path, partitionMethodDesc, true);
+  }
+
 	public TableDesc(String tableName, @Nullable Schema schema, String dataFormat, KeyValueSet options,
                    @Nullable URI path) {
 	  this(tableName, schema, new TableMeta(dataFormat, options), path);
 	}
-	
-	public TableDesc(TableDescProto proto) {
+
+  public TableDesc(String tableName, @Nullable Schema schema, String dataFormat, KeyValueSet options,
+                   @Nullable URI path, @Nullable PartitionMethodDesc partitionMethodDesc) {
+    this(tableName, schema, new TableMeta(dataFormat, options), path, partitionMethodDesc);
+  }
+
+  public TableDesc(TableDescProto proto) {
 	  this(proto.getTableName(), proto.hasSchema() ? SchemaFactory.newV1(proto.getSchema()) : null,
-        new TableMeta(proto.getMeta()), proto.hasPath() ? URI.create(proto.getPath()) : null, proto.getIsExternal());
+        new TableMeta(proto.getMeta()), proto.hasPath() ? URI.create(proto.getPath()) : null,
+      proto.hasPartition() ? new PartitionMethodDesc(proto.getPartition()) : null,
+      proto.getIsExternal());
     if(proto.hasStats()) {
       this.stats = new TableStats(proto.getStats());
-    }
-    if (proto.hasPartition()) {
-      this.partitionMethodDesc = new PartitionMethodDesc(proto.getPartition());
     }
 	}
 	

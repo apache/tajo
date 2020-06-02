@@ -311,7 +311,8 @@ public class QueryExecutor {
         queryInfo.getQueryId(),
         scanNode,
         maxRow,
-        Optional.empty());
+        Optional.empty(),
+        context.getCatalog());
 
     queryResultScanner.init();
 

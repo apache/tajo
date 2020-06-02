@@ -50,6 +50,11 @@ public class FileFragmentSerde implements FragmentSerde<FileFragment, FileFragme
     if(fragment.hostNames != null) {
       builder.addAllHosts(fragment.hostNames);
     }
+
+    if(fragment.getPartitionKeys() != null) {
+      builder.setPartitionKeys(fragment.getPartitionKeys());
+    }
+
     return builder.build();
   }
 
@@ -61,6 +66,8 @@ public class FileFragmentSerde implements FragmentSerde<FileFragment, FileFragme
         proto.getStartOffset(),
         proto.getLength(),
         proto.getHostsList().toArray(new String[proto.getHostsCount()]),
-        proto.getDiskIdsList().toArray(new Integer[proto.getDiskIdsCount()]));
+        proto.getDiskIdsList().toArray(new Integer[proto.getDiskIdsCount()]),
+        proto.getPartitionKeys()
+      );
   }
 }

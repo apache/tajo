@@ -74,7 +74,8 @@ public class TestFileFragment {
     for (int i = num - 1; i >= 0; i--) {
       tablets[i] = new FileFragment("tablet1_"+i, new Path(path, "tablet0"), i * 500, (i+1) * 500);
     }
-    
+
+
     Arrays.sort(tablets);
 
     for(int i = 0; i < num; i++) {
@@ -94,4 +95,62 @@ public class TestFileFragment {
     Collections.addAll(sortedSet, tablets);
     assertEquals(num, sortedSet.size());
   }
+
+  @Test
+  public final void testGetAndSetFieldsWithPartitionKeys() {
+    FileFragment fragment1 = new FileFragment("table1_1", new Path(path, "table0/col1=1"),
+      0, 500, "col1=1");
+
+    assertEquals("table1_1", fragment1.getInputSourceId());
+    assertEquals(new Path(path, "table0/col1=1"), fragment1.getPath());
+    assertEquals("col1=1", fragment1.getPartitionKeys());
+    assertTrue(0 == fragment1.getStartKey());
+    assertTrue(500 == fragment1.getLength());
+  }
+
+  @Test
+  public final void testGetProtoAndRestoreWithPartitionKeys() {
+    FileFragment fragment = new FileFragment("table1_1", new Path(path, "table0/col1=1"), 0,
+      500, "col1=1");
+
+    FileFragment fragment1 = FragmentConvertor.convert(conf, BuiltinFragmentKinds.FILE,
+      FragmentConvertor.toFragmentProto(conf, fragment));
+
+    assertEquals("table1_1", fragment1.getInputSourceId());
+    assertEquals(new Path(path, "table0/col1=1"), fragment1.getPath());
+    assertEquals("col1=1", fragment1.getPartitionKeys());
+    assertTrue(0 == fragment1.getStartKey());
+    assertTrue(500 == fragment1.getLength());
+  }
+
+  @Test
+  public final void testCompareToWithPartitionKeys() {
+    final int num = 10;
+    FileFragment[] tablets = new FileFragment[num];
+    for (int i = num - 1; i >= 0; i--) {
+      tablets[i] = new FileFragment("tablet1_"+i, new Path(path, "tablet0"), i * 500, (i+1) * 500
+        , "/col1=0/col2=0");
+    }
+
+    Arrays.sort(tablets);
+
+    for(int i = 0; i < num; i++) {
+      assertEquals("tablet1_"+i, tablets[i].getInputSourceId());
+    }
+  }
+
+  @Test
+  public final void testCompareToWithPartitionKeys2() {
+    final int num = 1860;
+    FileFragment[] tablets = new FileFragment[num];
+    for (int i = num - 1; i >= 0; i--) {
+      tablets[i] = new FileFragment("tablet1", new Path(path, "tablet/col1=" +i), (long)i * 6553500,
+        (long) (i+1) * 6553500, "col1=" + i);
+    }
+
+    SortedSet sortedSet = Sets.newTreeSet();
+    Collections.addAll(sortedSet, tablets);
+    assertEquals(num, sortedSet.size());
+  }
+
 }

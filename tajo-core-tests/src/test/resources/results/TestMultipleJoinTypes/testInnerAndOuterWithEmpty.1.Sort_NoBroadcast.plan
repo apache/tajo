@@ -6,8 +6,8 @@ JOIN(8)(LEFT_OUTER)
   => out schema: {(3) default.a.l_orderkey (INT4), default.b.o_orderkey (INT4), default.c.c_custkey (INT4)}
   => in schema: {(3) default.a.l_orderkey (INT4), default.b.o_orderkey (INT4), default.c.c_custkey (INT4)}
    PARTITIONS_SCAN(9) on default.customer_broad_parts as c
+     => filter: default.c.c_custkey (INT4) < 0
      => target list: default.c.c_custkey (INT4)
-     => num of filtered paths: 0
      => out schema: {(1) default.c.c_custkey (INT4)}
      => in schema: {(7) default.c.c_acctbal (FLOAT8), default.c.c_address (TEXT), default.c.c_comment (TEXT), default.c.c_mktsegment (TEXT), default.c.c_name (TEXT), default.c.c_nationkey (INT4), default.c.c_phone (TEXT)}
    JOIN(7)(INNER)
@@ -100,8 +100,8 @@ Block Id: eb_0000000000000_0000_000004 [LEAF]
 [q_0000000000000_0000] 4 => 5 (type=HASH_SHUFFLE, key=default.c.c_custkey (INT4), num=32)
 
 PARTITIONS_SCAN(9) on default.customer_broad_parts as c
+  => filter: default.c.c_custkey (INT4) < 0
   => target list: default.c.c_custkey (INT4)
-  => num of filtered paths: 0
   => out schema: {(1) default.c.c_custkey (INT4)}
   => in schema: {(7) default.c.c_acctbal (FLOAT8), default.c.c_address (TEXT), default.c.c_comment (TEXT), default.c.c_mktsegment (TEXT), default.c.c_name (TEXT), default.c.c_nationkey (INT4), default.c.c_phone (TEXT)}
 
