@@ -419,6 +419,11 @@ public class HistoryWriter extends AbstractService {
       try {
         querySummaryWriter.out.writeInt(jsonBytes.length);
         querySummaryWriter.out.write(jsonBytes);
+        //If object storage, close the output stream in order to create a readable object.
+        if(isObjectStorage(querySummaryWriter.path.toUri().getScheme())){
+          IOUtils.cleanup(LOG, querySummaryWriter);
+          querySummaryWriter.out = null;          
+        }
       } catch (IOException ie) {
         IOUtils.cleanup(LOG, querySummaryWriter);
         querySummaryWriter.out = null;
@@ -498,6 +503,19 @@ public class HistoryWriter extends AbstractService {
       }
       writerHolder.path = path;
       return fs.create(path, false, 4096, taskReplication, fs.getDefaultBlockSize(path));
+    }
+    
+    /* 
+     * Discern object storage.
+     * - gs:google cloud storage 
+     * - s3: AWS object storage
+     */
+    private boolean isObjectStorage(String scheme) {
+      if(scheme.indexOf("gs") != -1 || scheme.indexOf("s3") != -1 ){
+        return true;
+      } else {
+        return false;
+      }
     }
   }
 
