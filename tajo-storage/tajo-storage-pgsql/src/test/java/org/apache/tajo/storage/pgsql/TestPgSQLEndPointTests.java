@@ -22,7 +22,7 @@ import com.google.common.collect.Sets;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.TajoClient;
-import org.apache.tajo.exception.UndefinedTableException;
+import org.apache.tajo.exception.*;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -31,11 +31,11 @@ import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class TestPgSQLEndPointTests extends QueryTestCaseBase {
   private static final String jdbcUrl = PgSQLTestServer.getInstance().getJdbcUrlForAdmin();
   private static TajoClient client;
-
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -58,7 +58,7 @@ public class TestPgSQLEndPointTests extends QueryTestCaseBase {
   public void testGetTableList() {
     final Set<String> expected = Sets.newHashSet(PgSQLTestServer.TPCH_TABLES);
     expected.add("datetime_types");
-    final Set<String> retrieved = Sets.newHashSet(client.getTableList("tpch"));
+    final Set<String> retrieved = Sets.newHashSet(client.getTableList("pgsql_tpch"));
 
     assertEquals(expected, retrieved);
   }
@@ -69,6 +69,15 @@ public class TestPgSQLEndPointTests extends QueryTestCaseBase {
       TableDesc retrieved = client.getTableDesc(PgSQLTestServer.DATABASE_NAME + "." + tableName);
       assertEquals(PgSQLTestServer.DATABASE_NAME + "." + tableName, retrieved.getName());
       assertEquals(jdbcUrl + "&table=" + tableName, retrieved.getUri().toASCIIString());
+    }
+  }
+
+  @Test(expected = TajoRuntimeException.class)
+  public void testGetTableWithWrongDatabase() throws UndefinedTableException {
+    try {
+      client.getTableDesc("tpch" + "." + PgSQLTestServer.TPCH_TABLES[0]);
+    } catch (TajoException e) {
+      fail("database 'tpch' does not exist");
     }
   }
 }

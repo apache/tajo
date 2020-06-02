@@ -51,14 +51,16 @@ public abstract class JdbcMetadataProviderBase implements MetadataProvider {
 
   protected final JdbcTablespace space;
   protected final String databaseName;
+  protected final String mappedDatabaseName;
 
   protected final String jdbcUri;
 
   protected final Connection connection;
 
-  public JdbcMetadataProviderBase(JdbcTablespace space, String dbName) {
+  public JdbcMetadataProviderBase(JdbcTablespace space, String dbName, String mappedDatabaseName) {
     this.space = space;
     this.databaseName = dbName;
+    this.mappedDatabaseName = mappedDatabaseName;
 
     ConnectionInfo connInfo = ConnectionInfo.fromURI(space.getUri());
     this.jdbcUri  = space.getUri().toASCIIString();
@@ -102,7 +104,7 @@ public abstract class JdbcMetadataProviderBase implements MetadataProvider {
     ResultSet res = null;
     List<String> tableNames = Lists.newArrayList();
     try {
-      res = connection.getMetaData().getTables(databaseName, schemaPattern, tablePattern, GENERAL_TABLE_TYPES);
+      res = connection.getMetaData().getTables(mappedDatabaseName, schemaPattern, tablePattern, GENERAL_TABLE_TYPES);
       while(res.next()) {
         tableNames.add(res.getString("TABLE_NAME"));
       }
