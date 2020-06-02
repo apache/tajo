@@ -2,6 +2,7 @@ Tajo Change Log
 
 Release 0.12.0 - unreleased
 
+
   NEW FEATURES
 
     TAJO-2179: Add a regular expression scanner and appender. (jinho)

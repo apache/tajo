@@ -305,13 +305,16 @@ public class TajoTestingCluster {
   ////////////////////////////////////////////////////////
   // Catalog Section
   ////////////////////////////////////////////////////////
-  public CatalogServer startCatalogCluster() throws Exception {
+  private void initCatalogCluster() throws Exception {
     if(isCatalogServerRunning) throw new IOException("Catalog Cluster already running");
 
     CatalogTestingUtil.configureCatalog(conf, clusterTestBuildDir.getAbsolutePath());
     LOG.info("Apache Derby repository is set to " + conf.get(CatalogConstants.CATALOG_URI));
     conf.setVar(ConfVars.CATALOG_ADDRESS, "localhost:0");
+  }
 
+  public CatalogServer startCatalogCluster() throws Exception {
+    initCatalogCluster();
     catalogServer = new CatalogServer();
     catalogServer.init(conf);
     catalogServer.start();
@@ -465,6 +468,15 @@ public class TajoTestingCluster {
       LOG.info("MiniTajoCluster Worker #" + (i + 1) + " started.");
       tajoWorkers.add(tajoWorker);
     }
+  }
+
+  public void startMaster() throws Exception {
+    initCatalogCluster();
+    tajoMaster = new TajoMaster();
+    tajoMaster.init(conf);
+    tajoMaster.start();
+    isCatalogServerRunning = true;
+    catalogServer = tajoMaster.getCatalogServer();
   }
 
   public TajoMaster getMaster() {
