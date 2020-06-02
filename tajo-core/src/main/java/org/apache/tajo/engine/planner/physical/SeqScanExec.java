@@ -368,9 +368,9 @@ public class SeqScanExec extends ScanExec {
   @Override
   public String toString() {
     if (scanner != null) {
-      return "SeqScanExec:" + plan + "," + scanner.getClass().getName();
+      return String.format("%s:%s(%s)", getClass().getSimpleName(), scanner.getClass().getSimpleName(), plan);
     } else {
-      return "SeqScanExec:" + plan;
+      return String.format("%s(%s)", getClass().getSimpleName(), plan);
     }
   }
 }

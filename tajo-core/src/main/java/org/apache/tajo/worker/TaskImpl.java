@@ -39,6 +39,7 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
+import org.apache.tajo.engine.planner.physical.PhysicalPlanUtil;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.engine.query.TaskRequest;
 import org.apache.tajo.exception.ErrorUtil;
@@ -102,6 +103,7 @@ public class TaskImpl implements Task {
 
   private TupleComparator sortComp = null;
   private final int maxUrlLength;
+  private String physicalPlan;
 
   public TaskImpl(final TaskRequest request,
                   final ExecutionBlockContext executionBlockContext) throws IOException {
@@ -417,6 +419,10 @@ public class TaskImpl implements Task {
         this.executor = executionBlockContext.getTQueryEngine().createPlan(context, plan);
         this.executor.init();
 
+        StringBuilder builder = new StringBuilder();
+        PhysicalPlanUtil.printPhysicalPlan(executor, builder, 0);
+        this.physicalPlan = builder.toString();
+
         while(!context.isStopped() && executor.next() != null) {
         }
       }
@@ -526,6 +532,10 @@ public class TaskImpl implements Task {
           if (fetcher.getState() == FetcherState.FETCH_DATA_FINISHED) i++;
         }
         taskHistory.setFinishedFetchCount(i);
+      }
+
+      if(physicalPlan != null) {
+        taskHistory.setPhysicalPlan(physicalPlan);
       }
     } catch (Exception e) {
       LOG.warn(e.getMessage(), e);

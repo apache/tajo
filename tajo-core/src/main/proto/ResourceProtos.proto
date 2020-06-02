@@ -311,4 +311,5 @@ message TaskHistoryProto {
   optional int32 finished_fetch_count = 10;
   optional int32 total_fetch_count = 11;
   repeated FetcherHistoryProto fetcher_histories = 12;
+  optional string physical_plan = 13;
 }

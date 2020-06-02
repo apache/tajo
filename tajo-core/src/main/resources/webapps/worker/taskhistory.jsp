@@ -63,6 +63,7 @@
   <h2>Tajo Worker: <a href='index.jsp'><%=tajoWorker.getWorkerContext().getWorkerName()%></a></h2>
   <hr/>
   <h3>Task Detail: <%=request.getParameter("taskAttemptId")%></h3>
+  <pre style="white-space:pre-wrap;"><%= taskHistory.getPhysicalPlan() == null ? "" : taskHistory.getPhysicalPlan()%></pre>
   <table border="1" width="100%" class="border_table">
       <tr><td width="200" align="right">ID</td><td><%=request.getParameter("taskAttemptId")%></td></tr>
       <tr><td align="right">State</td><td><%=taskHistory.getState()%></td></tr>

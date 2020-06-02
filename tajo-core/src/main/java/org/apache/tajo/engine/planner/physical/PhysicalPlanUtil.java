@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -42,6 +43,7 @@ import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
+import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -257,6 +259,43 @@ public class PhysicalPlanUtil {
       if (!containsNullChar(meta) && context.containsKey(SessionVars.NULL_CHAR)) {
         setNullCharForTextSerializer(meta, context.get(SessionVars.NULL_CHAR));
       }
+    }
+  }
+
+  /**
+   * A pretty print string of a physical operator and its descendant operators.
+   *
+   */
+  public static void printPhysicalPlan(PhysicalExec exec, StringBuilder builder, int depth) {
+
+    String pad = "  ";
+    if (exec instanceof UnaryPhysicalExec) {
+      UnaryPhysicalExec operator = TUtil.checkTypeAndGet(exec, UnaryPhysicalExec.class);
+
+      builder.append(StringUtils.repeat(pad, depth)).append(operator.toString());
+      builder.append("\n");
+
+      if (operator.getChild() != null) {
+        printPhysicalPlan(operator.getChild(), builder, ++depth);
+      }
+    } else if (exec instanceof BinaryPhysicalExec) {
+      BinaryPhysicalExec operator = TUtil.checkTypeAndGet(exec, BinaryPhysicalExec.class);
+
+      builder.append(StringUtils.repeat(pad, depth)).append(operator.getClass().getSimpleName());
+      builder.append("\n");
+
+      if (operator.getLeftChild() != null) {
+        printPhysicalPlan(operator.getLeftChild(), builder, depth + 1);
+      }
+
+      if (operator.getRightChild() != null) {
+        printPhysicalPlan(operator.getRightChild(), builder, depth + 1);
+      }
+    } else if (exec == null) {
+      return;
+    } else {
+      builder.append(StringUtils.repeat(pad, depth)).append(exec.toString());
+      builder.append("\n");
     }
   }
 }
