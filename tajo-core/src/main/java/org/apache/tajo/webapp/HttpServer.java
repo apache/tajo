@@ -22,6 +22,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.util.TUtil;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
@@ -65,6 +67,8 @@ public class HttpServer {
     this.webServer = new Server();
     this.findPort = findPort;
 
+    TajoConf tajoConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
+
     if (connector == null) {
       listenerStartedExternally = false;
       listener = createBaseListener(conf);
@@ -92,7 +96,7 @@ public class HttpServer {
 
     webAppContext = new WebAppContext();
     webAppContext.setDisplayName(name);
-    webAppContext.setContextPath("/");
+    webAppContext.setContextPath(tajoConf.getVar(TajoConf.ConfVars.TAJO_MASTER_INFO_ADDRESS_CONTEXT_PATH));
     webAppContext.setResourceBase(appDir + "/" + name);
     webAppContext.setDescriptor(appDir + "/" + name + "/WEB-INF/web.xml");
 

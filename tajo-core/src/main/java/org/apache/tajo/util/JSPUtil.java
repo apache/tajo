@@ -391,4 +391,25 @@ public class JSPUtil {
 
     return originList;
   }
+
+  public static String getTajoMasterHttpAddrContextPath(Configuration config) {
+    if (!(config instanceof TajoConf)) {
+      throw new IllegalArgumentException("config should be a TajoConf type.");
+    }
+    try {
+      TajoConf conf = (TajoConf) config;
+      String tajoMasterHttpAddrContextPath = conf.getVar(ConfVars.TAJO_MASTER_INFO_ADDRESS_CONTEXT_PATH);
+      if (tajoMasterHttpAddrContextPath == null || tajoMasterHttpAddrContextPath.length() == 0 || "/".equals(tajoMasterHttpAddrContextPath)) {
+        tajoMasterHttpAddrContextPath = "";
+      } else {
+        if(!tajoMasterHttpAddrContextPath.startsWith("/") && tajoMasterHttpAddrContextPath.length() > 0) {
+          tajoMasterHttpAddrContextPath = "/" + tajoMasterHttpAddrContextPath;
+        }
+      }
+      return tajoMasterHttpAddrContextPath;
+    } catch (Exception e) {
+      e.printStackTrace();
+      return e.getMessage();
+    }
+  }
 }

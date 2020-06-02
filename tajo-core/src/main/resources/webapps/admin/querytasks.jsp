@@ -36,6 +36,8 @@
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
   HistoryReader reader = master.getContext().getHistoryReader();
 
+  String tajoMasterInfoAddressContextPath = JSPUtil.getTajoMasterHttpAddrContextPath(master.getConfig());
+
   String queryId = request.getParameter("queryId");
   String startTime = request.getParameter("startTime");
   String ebId = request.getParameter("ebid");
@@ -221,7 +223,7 @@
       NodeStatus nodeStatus = nodeMap.get(eachTask.getHostAndPort());
       if (nodeStatus != null) {
         String[] hostTokens = eachTask.getHostAndPort().split(":");
-        taskHost = "<a href='http://" + hostTokens[0] + ":" + nodeStatus.getConnectionInfo().getHttpInfoPort() +
+        taskHost = "<a href='http://" + hostTokens[0] + ":" + nodeStatus.getConnectionInfo().getHttpInfoPort() + tajoMasterInfoAddressContextPath +
             "/taskhistory.jsp?taskAttemptId=" + eachTask.getId() + "&startTime=" + eachTask.getLaunchTime() +
             "'>" + eachTask.getHostAndPort() + "</a>";
       }

@@ -240,7 +240,7 @@
     if(lastAttempt != null && lastAttempt.getWorkerConnectionInfo() != null) {
       WorkerConnectionInfo conn = lastAttempt.getWorkerConnectionInfo();
       TaskAttemptId lastAttemptId = lastAttempt.getId();
-      taskHost = "<a href='http://" + conn.getHost() + ":" + conn.getHttpInfoPort() + "/taskdetail.jsp?taskAttemptId=" + lastAttemptId + "'>" + conn.getHost() + "</a>";
+      taskHost = "<a href='http://" + conn.getHost() + ":" + conn.getHttpInfoPort() + tajoMasterInfoAddressContextPath + "/taskdetail.jsp?taskAttemptId=" + lastAttemptId + "'>" + conn.getHost() + "</a>";
       progress = eachTask.getLastAttempt().getProgress();
     }
 %>
