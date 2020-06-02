@@ -72,26 +72,18 @@ public class TestSQLAnalyzer {
 
     // get only files
     Collection<FileStatus> files = filter(Lists.newArrayList(fs.listStatus(positiveQueryDir)),
-        new Predicate<FileStatus>() {
-          @Override
-          public boolean apply(@Nullable FileStatus input) {
-            // TODO: This should be removed at TAJO-1891
-            if (input.getPath().getName().indexOf("add_partition") > -1) {
-              return false;
-            } else {
-              return input.isFile();
-            }
-          }
+      input -> {
+        // TODO: This should be removed at TAJO-1891
+        if (input.getPath().getName().indexOf("add_partition") > -1) {
+          return false;
+        } else {
+          return input.isFile();
         }
+      }
     );
 
     // transform FileStatus into File
-    return transform(files, new Function<FileStatus, File>() {
-      @Override
-      public File apply(@Nullable FileStatus fileStatus) {
-        return new File(URI.create(fileStatus.getPath().toString()));
-      }
-    });
+    return transform(files, fileStatus -> new File(URI.create(fileStatus.getPath().toString())));
   }
 
   /**
@@ -102,14 +94,11 @@ public class TestSQLAnalyzer {
    * @throws URISyntaxException
    */
   public Collection<Pair<String, String>> getFileContents(String subdir) throws IOException, URISyntaxException {
-    return transform(getResourceFiles(subdir), new Function<File, Pair<String, String>>() {
-      @Override
-      public Pair<String, String> apply(@Nullable File file) {
-        try {
-          return new Pair<>(file.getName(), FileUtil.readTextFile(file));
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
+    return transform(getResourceFiles(subdir), file -> {
+      try {
+        return new Pair<>(file.getName(), FileUtil.readTextFile(file));
+      } catch (IOException e) {
+        throw new RuntimeException(e);
       }
     });
   }

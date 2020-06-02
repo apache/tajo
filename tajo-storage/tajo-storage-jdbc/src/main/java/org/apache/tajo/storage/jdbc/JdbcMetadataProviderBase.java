@@ -204,20 +204,10 @@ public abstract class JdbcMetadataProviderBase implements MetadataProvider {
       }
 
       // sort columns in an order of ordinal position
-      Collections.sort(columns, new Comparator<Pair<Integer, Column>>() {
-        @Override
-        public int compare(Pair<Integer, Column> o1, Pair<Integer, Column> o2) {
-          return o1.getFirst() - o2.getFirst();
-        }
-      });
+      Collections.sort(columns, (o1, o2) -> o1.getFirst() - o2.getFirst());
 
       // transform the pair list into collection for columns
-      final Schema schema = SchemaBuilder.builder().addAll(Collections2.transform(columns, new Function<Pair<Integer,Column>, Column>() {
-        @Override
-        public Column apply(@Nullable Pair<Integer, Column> columnPair) {
-          return columnPair.getSecond();
-        }
-      })).build();
+      final Schema schema = SchemaBuilder.builder().addAll(Collections2.transform(columns, Pair::getSecond)).build();
 
 
       // fill the table stats

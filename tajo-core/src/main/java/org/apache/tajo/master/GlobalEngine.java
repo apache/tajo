@@ -154,11 +154,7 @@ public class GlobalEngine extends AbstractService {
     // Set queryCache in session
     int queryCacheSize = context.getConf().getIntVar(TajoConf.ConfVars.QUERY_SESSION_QUERY_CACHE_SIZE);
     if (queryCacheSize > 0 && session.getQueryCache() == null) {
-      Weigher<String, Expr> weighByLength = new Weigher<String, Expr>() {
-        public int weigh(String key, Expr expr) {
-          return key.length();
-        }
-      };
+      Weigher<String, Expr> weighByLength = (key, expr) -> key.length();
       LoadingCache<String, Expr> cache = CacheBuilder.newBuilder()
         .maximumWeight(queryCacheSize * 1024)
         .weigher(weighByLength)

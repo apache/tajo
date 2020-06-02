@@ -67,43 +67,40 @@ public class TestTableCache {
   }
 
   private Callable<CacheHolder<Long>> createTask(final TableCacheKey key, final ExecutionBlockSharedResource resource) {
-    return new Callable<CacheHolder<Long>>() {
-      @Override
-      public CacheHolder<Long> call() throws Exception {
-        CacheHolder<Long> result;
-        synchronized (resource.getLock()) {
-          if (!TableCache.getInstance().hasCache(key)) {
-            final long nanoTime = System.nanoTime();
-            final TableStats tableStats = new TableStats();
-            tableStats.setNumRows(100);
-            tableStats.setNumBytes(1000);
+    return () -> {
+      CacheHolder<Long> result;
+      synchronized (resource.getLock()) {
+        if (!TableCache.getInstance().hasCache(key)) {
+          final long nanoTime = System.nanoTime();
+          final TableStats tableStats = new TableStats();
+          tableStats.setNumRows(100);
+          tableStats.setNumBytes(1000);
 
-            final CacheHolder<Long> cacheHolder = new CacheHolder<Long>() {
+          final CacheHolder<Long> cacheHolder = new CacheHolder<Long>() {
 
-              @Override
-              public Long getData() {
-                return nanoTime;
-              }
+            @Override
+            public Long getData() {
+              return nanoTime;
+            }
 
-              @Override
-              public TableStats getTableStats() {
-                return tableStats;
-              }
+            @Override
+            public TableStats getTableStats() {
+              return tableStats;
+            }
 
-              @Override
-              public void release() {
+            @Override
+            public void release() {
 
-              }
-            };
+            }
+          };
 
-            resource.addBroadcastCache(key, cacheHolder);
-          }
+          resource.addBroadcastCache(key, cacheHolder);
         }
-
-        CacheHolder<?> holder = resource.getBroadcastCache(key);
-        result = (CacheHolder<Long>) holder;
-        return result;
       }
+
+      CacheHolder<?> holder = resource.getBroadcastCache(key);
+      result = (CacheHolder<Long>) holder;
+      return result;
     };
   }
 }

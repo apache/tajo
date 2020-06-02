@@ -87,15 +87,11 @@ public class JSPUtil {
                                                           final boolean desc) {
     List<QueryMasterTask> queryMasterTaskList = new ArrayList<>(queryMasterTasks);
 
-    Collections.sort(queryMasterTaskList, new Comparator<QueryMasterTask>() {
-
-      @Override
-      public int compare(QueryMasterTask task1, QueryMasterTask task2) {
-        if(desc) {
-          return task2.getQueryId().toString().compareTo(task1.getQueryId().toString());
-        } else {
-          return task1.getQueryId().toString().compareTo(task2.getQueryId().toString());
-        }
+    Collections.sort(queryMasterTaskList, (task1, task2) -> {
+      if(desc) {
+        return task2.getQueryId().toString().compareTo(task1.getQueryId().toString());
+      } else {
+        return task1.getQueryId().toString().compareTo(task2.getQueryId().toString());
       }
     });
 
@@ -106,14 +102,11 @@ public class JSPUtil {
                                                           final boolean desc) {
     List<QueryInProgress> queryProgressList = new ArrayList<>(queryInProgresses);
 
-    Collections.sort(queryProgressList, new Comparator<QueryInProgress>() {
-      @Override
-      public int compare(QueryInProgress query1, QueryInProgress query2) {
-        if(desc) {
-          return query2.getQueryId().toString().compareTo(query1.getQueryId().toString());
-        } else {
-          return query1.getQueryId().toString().compareTo(query2.getQueryId().toString());
-        }
+    Collections.sort(queryProgressList, (query1, query2) -> {
+      if(desc) {
+        return query2.getQueryId().toString().compareTo(query1.getQueryId().toString());
+      } else {
+        return query1.getQueryId().toString().compareTo(query2.getQueryId().toString());
       }
     });
 
@@ -122,21 +115,18 @@ public class JSPUtil {
 
   public static List<Stage> sortStages(Collection<Stage> stages) {
     List<Stage> stageList = new ArrayList<>(stages);
-    Collections.sort(stageList, new Comparator<Stage>() {
-      @Override
-      public int compare(Stage stage1, Stage stage2) {
-        long q1StartTime = stage1.getStartTime();
-        long q2StartTime = stage2.getStartTime();
+    Collections.sort(stageList, (stage1, stage2) -> {
+      long q1StartTime = stage1.getStartTime();
+      long q2StartTime = stage2.getStartTime();
 
-        q1StartTime = (q1StartTime == 0 ? Long.MAX_VALUE : q1StartTime);
-        q2StartTime = (q2StartTime == 0 ? Long.MAX_VALUE : q2StartTime);
+      q1StartTime = (q1StartTime == 0 ? Long.MAX_VALUE : q1StartTime);
+      q2StartTime = (q2StartTime == 0 ? Long.MAX_VALUE : q2StartTime);
 
-        int result = compareLong(q1StartTime, q2StartTime);
-        if (result == 0) {
-          return stage1.getId().toString().compareTo(stage2.getId().toString());
-        } else {
-          return result;
-        }
+      int result = compareLong(q1StartTime, q2StartTime);
+      if (result == 0) {
+        return stage1.getId().toString().compareTo(stage2.getId().toString());
+      } else {
+        return result;
       }
     });
 
@@ -145,21 +135,18 @@ public class JSPUtil {
 
   public static List<StageHistory> sortStageHistories(Collection<StageHistory> stages) {
     List<StageHistory> stageList = new ArrayList<>(stages);
-    Collections.sort(stageList, new Comparator<StageHistory>() {
-      @Override
-      public int compare(StageHistory stage1, StageHistory stage2) {
-        long q1StartTime = stage1.getStartTime();
-        long q2StartTime = stage2.getStartTime();
+    Collections.sort(stageList, (stage1, stage2) -> {
+      long q1StartTime = stage1.getStartTime();
+      long q2StartTime = stage2.getStartTime();
 
-        q1StartTime = (q1StartTime == 0 ? Long.MAX_VALUE : q1StartTime);
-        q2StartTime = (q2StartTime == 0 ? Long.MAX_VALUE : q2StartTime);
+      q1StartTime = (q1StartTime == 0 ? Long.MAX_VALUE : q1StartTime);
+      q2StartTime = (q2StartTime == 0 ? Long.MAX_VALUE : q2StartTime);
 
-        int result = compareLong(q1StartTime, q2StartTime);
-        if (result == 0) {
-          return stage1.getExecutionBlockId().compareTo(stage2.getExecutionBlockId());
-        } else {
-          return result;
-        }
+      int result = compareLong(q1StartTime, q2StartTime);
+      if (result == 0) {
+        return stage1.getExecutionBlockId().compareTo(stage2.getExecutionBlockId());
+      } else {
+        return result;
       }
     });
 

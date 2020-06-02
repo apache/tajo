@@ -53,11 +53,8 @@ public class SQLBuilder {
 
     StringBuilder selectClause = new StringBuilder("SELECT ");
     if (targets.length > 0) {
-      selectClause.append(StringUtils.join(targets, ",", new Function<Column, String>() {
-        @Override
-        public String apply(@Nullable Column input) {
-          return input.getSimpleName();
-        }
+      selectClause.append(StringUtils.join(targets, ",", input -> {
+        return input.getSimpleName();
       }));
     } else {
       selectClause.append("1");
@@ -174,15 +171,12 @@ public class SQLBuilder {
   }
 
   public String generateTargetList(List<Target> targets) {
-    return StringUtils.join(targets, ",", new Function<Target, String>() {
-      @Override
-      public String apply(@Nullable Target t) {
-        StringBuilder sb = new StringBuilder(sqlExprGen.generate(t.getEvalTree()));
-        if (t.hasAlias()) {
-          sb.append(" AS ").append(t.getAlias());
-        }
-        return sb.toString();
+    return StringUtils.join(targets, ",", t -> {
+      StringBuilder sb = new StringBuilder(sqlExprGen.generate(t.getEvalTree()));
+      if (t.hasAlias()) {
+        sb.append(" AS ").append(t.getAlias());
       }
+      return sb.toString();
     });
   }
 }

@@ -447,18 +447,8 @@ public class TablespaceManager implements StorageService {
   }
 
   public static Collection<MetadataProvider> getMetadataProviders() {
-    Collection<Tablespace> filteredSpace = Collections2.filter(TABLE_SPACES.values(), new Predicate<Tablespace>() {
-      @Override
-      public boolean apply(@Nullable Tablespace space) {
-        return space.getProperty().isMetadataProvided();
-      }
-    });
+    Collection<Tablespace> filteredSpace = Collections2.filter(TABLE_SPACES.values(), space -> space.getProperty().isMetadataProvided());
 
-    return Collections2.transform(filteredSpace, new Function<Tablespace, MetadataProvider>() {
-      @Override
-      public MetadataProvider apply(@Nullable Tablespace space) {
-        return space.getMetadataProvider();
-      }
-    });
+    return Collections2.transform(filteredSpace, space -> space.getMetadataProvider());
   }
 }

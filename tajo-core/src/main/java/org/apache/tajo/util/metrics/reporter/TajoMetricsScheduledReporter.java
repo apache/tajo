@@ -136,14 +136,11 @@ public abstract class TajoMetricsScheduledReporter extends TajoMetricsReporter i
    */
   public void start(long period, TimeUnit unit) {
     this.period = period;
-    executor.scheduleAtFixedRate(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          report();
-        } catch (Exception e) {
-          LOG.warn("Metric report error:" + e.getMessage(), e);
-        }
+    executor.scheduleAtFixedRate((Runnable) () -> {
+      try {
+        report();
+      } catch (Exception e) {
+        LOG.warn("Metric report error:" + e.getMessage(), e);
       }
     }, period, period, unit);
   }

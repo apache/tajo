@@ -172,11 +172,8 @@ public abstract class CommonJoinExec extends BinaryPhysicalExec {
     if (rightJoinFilter == null) {
       return rightTuples.iterator();
     }
-    return Iterators.filter(rightTuples.iterator(), new Predicate<Tuple>() {
-      @Override
-      public boolean apply(Tuple input) {
-        return rightJoinFilter.eval(input).isTrue();
-      }
+    return Iterators.filter(rightTuples.iterator(), input -> {
+      return rightJoinFilter.eval(input).isTrue();
     });
   }
 

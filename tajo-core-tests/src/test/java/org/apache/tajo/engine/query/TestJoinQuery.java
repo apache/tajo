@@ -193,16 +193,21 @@ public class TestJoinQuery extends QueryTestCaseBase {
 
     // According to node type(leaf or non-leaf) Broadcast join is determined differently by Repartitioner.
     // testMultipleBroadcastDataFileWithZeroLength testcase is for the leaf node
-    createMultiFile("nation", 2, new TupleCreator() {
-      public Tuple createTuple(String[] columnDatas) {
-        return new VTuple(new Datum[]{
-            columnDatas[0].equals("") ? NullDatum.get() : new Int4Datum(Integer.parseInt(columnDatas[0])),
-            columnDatas[1].equals("") ? NullDatum.get() : new TextDatum(columnDatas[1]),
-            columnDatas[2].equals("") ? NullDatum.get() : new Int4Datum(Integer.parseInt(columnDatas[2])),
-            columnDatas[3].equals("") ? NullDatum.get() : new TextDatum(columnDatas[3])
-        });
-      }
-    });
+//<<<<<<< 1c44272bff0fc0022a1c8ce060b70d11a30c59e0
+    createMultiFile("nation", 2, columnDatas -> new VTuple(new Datum[]{
+      columnDatas[0].equals("") ? NullDatum.get() : new Int4Datum(Integer.parseInt(columnDatas[0])),
+      columnDatas[1].equals("") ? NullDatum.get() : new TextDatum(columnDatas[1]),
+      columnDatas[2].equals("") ? NullDatum.get() : new Int4Datum(Integer.parseInt(columnDatas[2])),
+      columnDatas[3].equals("") ? NullDatum.get() : new TextDatum(columnDatas[3])
+    }));
+//=======
+//    createMultiFile("nation", 2, columnDatas -> new VTuple(new Datum[]{
+//        new Int4Datum(Integer.parseInt(columnDatas[0])),
+//        new TextDatum(columnDatas[1]),
+//        new Int4Datum(Integer.parseInt(columnDatas[2])),
+//        new TextDatum(columnDatas[3])
+//    }));
+//>>>>>>> initial commit
     addEmptyDataFile("nation_multifile", false);
   }
 

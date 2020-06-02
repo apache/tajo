@@ -440,15 +440,12 @@ public class TajoCli implements Closeable {
   }
 
   private void addShutdownHook() {
-    ShutdownHookManager.get().addShutdownHook(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          history.flush();
-        } catch (IOException e) {
-        }
-        client.close();
+    ShutdownHookManager.get().addShutdownHook(() -> {
+      try {
+        history.flush();
+      } catch (IOException e) {
       }
+      client.close();
     }, SHUTDOWN_HOOK_PRIORITY);
   }
 

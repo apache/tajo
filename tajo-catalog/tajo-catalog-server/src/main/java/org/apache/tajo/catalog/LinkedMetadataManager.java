@@ -77,12 +77,7 @@ public class LinkedMetadataManager {
    */
   public Optional<Pair<String, URI>> getTablespace(final String spaceName) {
     Collection<MetadataProvider> filtered = filter(providerMap.values(),
-        new Predicate<MetadataProvider>() {
-          @Override
-          public boolean apply(@Nullable MetadataProvider input) {
-            return input.getTablespaceName().equals(spaceName);
-          }
-        });
+      input -> input.getTablespaceName().equals(spaceName));
 
     if (filtered.isEmpty()) {
       return Optional.empty();

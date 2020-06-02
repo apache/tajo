@@ -734,18 +734,15 @@ public class Stage implements EventHandler<StageEvent> {
   private void sendStopExecutionBlockEvent(final StopExecutionBlockRequest requestProto) {
 
     for (final InetSocketAddress worker : getAssignedWorkerMap().values()) {
-      getContext().getQueryMasterContext().getEventExecutor().submit(new Runnable() {
-        @Override
-        public void run() {
-          try {
-            AsyncRpcClient tajoWorkerRpc =
-                RpcClientManager.getInstance().getClient(worker, TajoWorkerProtocol.class, true, rpcParams);
-            TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
-            tajoWorkerRpcClient.stopExecutionBlock(null,
-                requestProto, NullCallback.get(PrimitiveProtos.BoolProto.class));
-          } catch (Throwable e) {
-            LOG.error(e.getMessage(), e);
-          }
+      getContext().getQueryMasterContext().getEventExecutor().submit((Runnable) () -> {
+        try {
+          AsyncRpcClient tajoWorkerRpc =
+              RpcClientManager.getInstance().getClient(worker, TajoWorkerProtocol.class, true, rpcParams);
+          TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
+          tajoWorkerRpcClient.stopExecutionBlock(null,
+              requestProto, NullCallback.get(PrimitiveProtos.BoolProto.class));
+        } catch (Throwable e) {
+          LOG.error(e.getMessage(), e);
         }
       });
     }
@@ -859,42 +856,37 @@ public class Stage implements EventHandler<StageEvent> {
           // TODO: verify changed shuffle plan
           initTaskScheduler(stage);
           // execute pre-processing asyncronously
-          stage.getContext().getQueryMasterContext().getSingleEventExecutor()
-              .submit(new Runnable() {
-                        @Override
-                        public void run() {
-                          try {
-                            schedule(stage);
-                            stage.totalScheduledObjectsCount = stage.getTaskScheduler().remainingScheduledObjectNum();
-                            LOG.info(stage.totalScheduledObjectsCount + " objects are scheduled");
+          stage.getContext().getQueryMasterContext().getSingleEventExecutor().submit(() -> {
+            try {
+              schedule(stage);
+              stage.totalScheduledObjectsCount = stage.getTaskScheduler().remainingScheduledObjectNum();
+              LOG.info(stage.totalScheduledObjectsCount + " objects are scheduled");
 
-                            if (stage.getTaskScheduler().remainingScheduledObjectNum() == 0) { // if there is no tasks
-                              stage.eventHandler.handle(
-                                  new StageEvent(stage.getId(), StageEventType.SQ_STAGE_COMPLETED));
-                            } else {
-                              if(stage.getSynchronizedState() == StageState.INITED) {
-                                stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_START));
-                                stage.taskScheduler.start();
-                              } else {
-                                /* all tasks are killed before stage are inited */
-                                if (stage.getTotalScheduledObjectsCount() == stage.getCompletedTaskCount()) {
-                                  stage.eventHandler.handle(
-                                      new StageEvent(stage.getId(), StageEventType.SQ_STAGE_COMPLETED));
-                                } else {
-                                  stage.eventHandler.handle(
-                                      new StageEvent(stage.getId(), StageEventType.SQ_KILL));
-                                }
-                              }
-                            }
-                          } catch (Throwable e) {
-                            LOG.error("Stage (" + stage.getId() + ") ERROR: ", e);
-                            stage.setFinishTime();
-                            stage.eventHandler.handle(new StageDiagnosticsUpdateEvent(stage.getId(), e.getMessage()));
-                            stage.eventHandler.handle(new StageCompletedEvent(stage.getId(), StageState.ERROR));
-                          }
-                        }
-                      }
-              );
+              if (stage.getTaskScheduler().remainingScheduledObjectNum() == 0) { // if there is no tasks
+                stage.eventHandler.handle(
+                    new StageEvent(stage.getId(), StageEventType.SQ_STAGE_COMPLETED));
+              } else {
+                if(stage.getSynchronizedState() == StageState.INITED) {
+                  stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_START));
+                  stage.taskScheduler.start();
+                } else {
+                  /* all tasks are killed before stage are inited */
+                  if (stage.getTotalScheduledObjectsCount() == stage.getCompletedTaskCount()) {
+                    stage.eventHandler.handle(
+                        new StageEvent(stage.getId(), StageEventType.SQ_STAGE_COMPLETED));
+                  } else {
+                    stage.eventHandler.handle(
+                        new StageEvent(stage.getId(), StageEventType.SQ_KILL));
+                  }
+                }
+              }
+            } catch (Throwable e) {
+              LOG.error("Stage (" + stage.getId() + ") ERROR: ", e);
+              stage.setFinishTime();
+              stage.eventHandler.handle(new StageDiagnosticsUpdateEvent(stage.getId(), e.getMessage()));
+              stage.eventHandler.handle(new StageCompletedEvent(stage.getId(), StageState.ERROR));
+            }
+          });
           state = StageState.INITED;
         }
       } catch (Throwable e) {

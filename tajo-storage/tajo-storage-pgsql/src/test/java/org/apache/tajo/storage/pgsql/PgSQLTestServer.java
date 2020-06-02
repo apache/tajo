@@ -73,14 +73,11 @@ public class PgSQLTestServer {
         "tpch"
     );
 
-    Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          server.close();
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
+    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+      try {
+        server.close();
+      } catch (IOException e) {
+        e.printStackTrace();
       }
     }));
 

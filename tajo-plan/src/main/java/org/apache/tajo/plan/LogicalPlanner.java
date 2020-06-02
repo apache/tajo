@@ -374,12 +374,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     List<ExprNormalizer.WindowSpecReferences> windowSpecReferencesList = new ArrayList<>();
 
-    List<Integer> targetsIds = normalize(context, projection, normalizedExprList, new Matcher() {
-      @Override
-      public boolean isMatch(Expr expr) {
-        return ExprFinder.finds(expr, OpType.WindowFunction).size() == 0;
-      }
-    });
+    List<Integer> targetsIds = normalize(context, projection, normalizedExprList, expr -> ExprFinder.finds(expr, OpType.WindowFunction).size() == 0);
 
     // Note: Why separate normalization and add(Named)Expr?
     //
@@ -388,12 +383,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // the same logical node. It will cause impossible evaluation in physical executors.
     addNamedExprs(block, referenceNames, normalizedExprList, windowSpecReferencesList, projection, targetsIds);
 
-    targetsIds = normalize(context, projection, normalizedExprList, new Matcher() {
-      @Override
-      public boolean isMatch(Expr expr) {
-        return ExprFinder.finds(expr, OpType.WindowFunction).size() > 0;
-      }
-    });
+    targetsIds = normalize(context, projection, normalizedExprList, expr -> ExprFinder.finds(expr, OpType.WindowFunction).size() > 0);
     addNamedExprs(block, referenceNames, normalizedExprList, windowSpecReferencesList, projection, targetsIds);
 
     return new Pair<>(referenceNames,
