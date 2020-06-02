@@ -67,6 +67,7 @@ import org.apache.tajo.util.history.HistoryWriter;
 import org.apache.tajo.util.metrics.TajoSystemMetrics;
 import org.apache.tajo.webapp.QueryExecutorServlet;
 import org.apache.tajo.webapp.StaticHttpServer;
+import org.apache.tajo.webapp.servlet.MasterMetricsServlet;
 import org.apache.tajo.ws.rs.TajoRestService;
 
 import java.io.IOException;
@@ -272,6 +273,7 @@ public class TajoMaster extends CompositeService {
       webServer = StaticHttpServer.getInstance(this ,"admin", address.getHostName(), address.getPort(),
           true, null, context.getConf(), null);
       webServer.addServlet("queryServlet", "/query_exec", QueryExecutorServlet.class);
+      webServer.addServlet("masterMetricsServlet", "/metrics", MasterMetricsServlet.class);
       webServer.start();
     }
   }
