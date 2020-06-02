@@ -1,0 +1,1 @@
+select l_shipinstruct, l_shipmode from lineitem where l_orderkey > 1 and l_linenumber > 0;

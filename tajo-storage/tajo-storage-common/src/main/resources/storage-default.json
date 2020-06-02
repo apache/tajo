@@ -16,6 +16,10 @@
       "handler": "org.apache.tajo.storage.pgsql.PgSQLTablespace",
       "default-format": "rowstore"
     },
+    "jdbc:mysql": {
+      "handler": "org.apache.tajo.storage.mysql.MySQLTablespace",
+      "default-format": "rowstore"
+    },
     "s3": {
       "handler": "org.apache.tajo.storage.s3.S3TableSpace",
       "default-format": "text"

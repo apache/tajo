@@ -1,0 +1,1 @@
+select * from lineitem where l_shipdate between date '1996-01-1' and date '1997-12-31';
